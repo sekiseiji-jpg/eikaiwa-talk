@@ -809,20 +809,32 @@ $('#ai-topic').addEventListener('change', (e) => { store.set('aiTopic', e.target
 $('#ai-level').addEventListener('change', (e) => { store.set('aiLevel', e.target.value); ai.reset(); });
 
 // ---------- 発音練習 ----------
+// [キー, 名前, 説明]
+const PRON_MODES = [
+  ['read', '📖 読んで発音', '文を見て発音する'],
+  ['repeat', '🎧 聞いてリピート', '文を見ずに、聞いてまねする'],
+  ['ja2en', '🇯🇵 日本語から言う', '日本語を見て英語で言う'],
+  ['dictation', '✍️ ディクテーション', '聞いた英語を書き取る'],
+  ['pairs', '👂 聞き分け', '似た音の2語のどちらかを当てる'],
+  ['test', '🏁 10問テスト', '10問続けて平均点を出す'],
+];
+const PAIR_RE = /^([a-z]+) and ([a-z]+)$/i;
+
 const pron = {
   cat: Object.keys(PHRASES)[0],
+  mode: store.get('pronMode', 'read'),
   idx: 0,
+  revealed: false,
+  test: null, // 10問テストの進行
+  pair: null, // 聞き分けの出題
+  pairScore: { ok: 0, total: 0 },
 
   get list() { return PHRASES[this.cat]; },
-  get phrase() { return this.list[this.idx]; },
+  get phrase() { return this.test ? this.test.items[this.test.i] : this.list[this.idx]; },
 
-  render() {
-    const [en, ja] = this.phrase;
-    $('#pron-en').textContent = en;
-    $('#pron-ja').textContent = ja;
-    $('#pron-pos').textContent = `${this.idx + 1} / ${this.list.length}`;
-    const best = store.get('pronBest', {})[en];
-    $('#pron-result').innerHTML = best != null ? `<span class="muted">ベスト: ${best}点</span>` : '';
+  renderHeader() {
+    $('#pron-modes').innerHTML = PRON_MODES.map(([k, name, desc]) =>
+      `<button class="mode ${this.mode === k ? 'active' : ''}" data-pmode="${k}" title="${escapeHtml(desc)}">${name}</button>`).join('');
     const all = store.get('pronBest', {});
     const scored = this.list.filter(([p]) => all[p] != null);
     $('#pron-score-total').textContent = scored.length
@@ -830,40 +842,225 @@ const pron = {
       : '';
   },
 
-  judge(heard) {
-    const [en] = this.phrase;
-    const target = en.split(/\s+/);
-    const tw = target.map((w) => words(w).join(''));
+  render() {
+    this.renderHeader();
+    if (this.mode === 'pairs') { this.renderPairs(); return; }
+    if (this.mode === 'test' && !this.test) this.startTest();
+    const [en, ja] = this.phrase;
+    const m = this.mode;
+    const showEn = m === 'read' || m === 'test' || this.revealed;
+    const showJa = m !== 'repeat' && m !== 'dictation' ? true : this.revealed;
+    const pos = this.test ? `🏁 テスト ${this.test.i + 1} / ${this.test.items.length}` : `${this.idx + 1} / ${this.list.length}`;
+    const hidden = { repeat: '🎧 お手本を聞いて、まねして言おう', ja2en: '（英語で言ってみよう）', dictation: '🎧 聞こえた英語を書き取ろう' }[m];
+    const canListen = m !== 'ja2en' || this.revealed; // 日本語から言うときは、お手本を聞くと答えがわかってしまう
+    const best = store.get('pronBest', {})[en];
+    $('#pron-area').innerHTML = `
+      <div class="card pron-card">
+        <div class="muted">${pos}</div>
+        ${m === 'ja2en' ? `<div class="pron-en">${escapeHtml(ja)}</div>` : ''}
+        <div class="pron-en ${showEn ? '' : 'masked'}">${showEn ? escapeHtml(en) : escapeHtml(hidden || '')}</div>
+        ${m !== 'ja2en' && showJa ? `<div class="muted">${escapeHtml(ja)}</div>` : ''}
+        <div class="row center">
+          ${canListen ? `<button class="btn ghost" data-act="listen">🔊 お手本</button>
+          <button class="btn ghost" data-act="slow">🐢 ゆっくり</button>` : ''}
+          ${m === 'dictation' ? '' : '<button class="btn mic big" data-act="mic">🎤 発音する</button>'}
+          ${!showEn ? '<button class="btn ghost" data-act="reveal">💡 答えを見る</button>' : ''}
+        </div>
+        ${m === 'dictation' && !this.revealed ? `
+          <div class="composer"><input id="dict-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="聞こえた英文を入力">
+          <button class="btn primary" data-act="check">答える</button></div>` : ''}
+        <div id="pron-result" class="pron-result">${best != null && m !== 'test' && m !== 'dictation' ? `<span class="muted">発音のベスト: ${best}点</span>` : ''}</div>
+        <div class="row center">
+          ${this.test
+            ? '<button class="btn ghost" data-act="skip">スキップ →</button>'
+            : `<button class="btn ghost" data-act="prev">← 前へ</button>
+               <button class="btn ghost" data-act="shuffle" title="ランダム">🔀</button>
+               <button class="btn ghost" data-act="next">次へ →</button>`}
+        </div>
+      </div>`;
+    if (m === 'repeat' || m === 'dictation') speak(en, { lang: 'en-US' });
+  },
+
+  /** 採点して結果を表示し、点数を返す */
+  judge(heard, target = this.phrase[0], label = '聞き取り結果') {
+    const tokens = target.split(/\s+/);
+    const tw = tokens.map((w) => words(w).join(''));
     const hw = words(heard);
     const { len, matchedA } = lcs(tw, hw);
     const score = Math.round((200 * len) / (tw.length + hw.length || 1));
     const cls = scoreClass(score);
-    const marked = target.map((w, i) => `<span class="${matchedA.has(i) ? 'w-ok' : 'w-ng'}">${escapeHtml(w)}</span>`).join(' ');
+    const marked = tokens.map((w, i) => `<span class="${matchedA.has(i) ? 'w-ok' : 'w-ng'}">${escapeHtml(w)}</span>`).join(' ');
     const msg = score >= 90 ? 'Perfect! 🎉' : score >= 70 ? 'Nice! 👍' : score >= 50 ? 'Almost! 💪' : 'Try again! 🔁';
     $('#pron-result').innerHTML = `
       <div class="big-score score ${cls}">${score}点</div>
       <div>${msg}</div>
       <div class="words">${marked}</div>
-      <div class="heard">聞き取り結果: “${escapeHtml(heard)}”</div>`;
+      <div class="heard">${label}: “${escapeHtml(heard)}”</div>`;
     stats.add('pron', score >= 70);
     const best = store.get('pronBest', {});
-    if (best[en] == null || score > best[en]) { best[en] = score; store.set('pronBest', best); }
+    if (this.mode !== 'dictation' && (best[target] == null || score > best[target])) { best[target] = score; store.set('pronBest', best); }
+    return score;
+  },
+
+  go(delta) {
+    this.idx = (this.idx + delta + this.list.length) % this.list.length;
+    this.revealed = false;
+    this.render();
+  },
+
+  // ----- 10問テスト -----
+  startTest() {
+    this.test = { items: shuffle(this.list).slice(0, 10), i: 0, scores: [] };
+    this.revealed = false;
+  },
+
+  testNext(score) {
+    const t = this.test;
+    t.scores[t.i] = score;
+    t.i++;
+    if (t.i < t.items.length) { this.render(); return; }
+    const done = t.scores.filter((x) => x != null);
+    const avg = done.length ? Math.round(done.reduce((a, b) => a + b, 0) / t.items.length) : 0;
+    const all = store.get('pronTestBest', {});
+    const isBest = all[this.cat] == null || avg > all[this.cat];
+    if (isBest) { all[this.cat] = avg; store.set('pronTestBest', all); }
+    $('#pron-area').innerHTML = `
+      <div class="card result-box">
+        <div class="muted">🏁 ${escapeHtml(this.cat)} 10問テスト</div>
+        <div class="big-score score ${scoreClass(avg)}">平均 ${avg}点</div>
+        <p>${isBest ? 'ベスト更新！🎉' : `ベスト: ${all[this.cat]}点`}</p>
+        <ul class="list compact">${t.items.map(([en], k) => `<li data-say="${escapeHtml(en)}"><div class="txt">${escapeHtml(en)}</div>
+          <span class="score ${t.scores[k] == null ? '' : scoreClass(t.scores[k])}">${t.scores[k] == null ? 'スキップ' : t.scores[k] + '点'}</span></li>`).join('')}</ul>
+        <button class="btn primary" data-act="retest">もう一度</button>
+      </div>`;
+    this.test = null;
+  },
+
+  // ----- 聞き分け -----
+  newPair() {
+    // 「X and Y」形式のフレーズを聞き分け問題にする。カテゴリに少なければ全カテゴリから
+    const pairsOf = (list) => list.map(([en, ja]) => { const m = PAIR_RE.exec(en); return m && { a: m[1], b: m[2], ja }; }).filter(Boolean);
+    const here = pairsOf(this.list);
+    const fromAll = here.length < 3;
+    const pool = fromAll ? pairsOf(Object.values(PHRASES).flat()) : here;
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    this.pair = { ...p, answer: Math.random() < 0.5 ? p.a : p.b, done: false, fromAll };
+  },
+
+  renderPairs() {
+    if (!this.pair) this.newPair();
+    const p = this.pair;
+    const sc = this.pairScore;
+    $('#pron-area').innerHTML = `
+      <div class="card pron-card">
+        <div class="muted">👂 どちらの単語が聞こえた？ ・ 正解 <span id="pair-score">${sc.ok} / ${sc.total}</span>${p.fromAll ? '（このカテゴリにペアが少ないので全カテゴリから出題）' : ''}</div>
+        <div class="row center"><button class="btn ghost big" data-act="pair-play">🔊 もう一度聞く</button>
+          <button class="btn ghost" data-act="pair-slow">🐢</button></div>
+        <div class="choices">
+          <button class="choice" data-pick="${escapeHtml(p.a)}">${escapeHtml(p.a)}</button>
+          <button class="choice" data-pick="${escapeHtml(p.b)}">${escapeHtml(p.b)}</button>
+        </div>
+        <div id="pron-result" class="pron-result"></div>
+      </div>`;
+    speak(p.answer, { lang: 'en-US' });
+  },
+
+  choosePair(word, btn) {
+    const p = this.pair;
+    if (p.done) return;
+    p.done = true;
+    const ok = word === p.answer;
+    this.pairScore.total++;
+    if (ok) this.pairScore.ok++;
+    $('#pair-score').textContent = `${this.pairScore.ok} / ${this.pairScore.total}`;
+    stats.add('pron', ok);
+    document.querySelectorAll('#pron-area [data-pick]').forEach((b) => { if (b.dataset.pick === p.answer) b.classList.add('correct'); });
+    if (!ok) btn.classList.add('wrong');
+    $('#pron-result').innerHTML = `
+      <div class="big-score score ${ok ? 'good' : 'bad'}">${ok ? '⭕ 正解！' : '❌ ざんねん'}</div>
+      <div>聞こえたのは <b>${escapeHtml(p.answer)}</b>（${escapeHtml(p.ja)}）</div>
+      <div class="row center">
+        <button class="btn ghost" data-say="${escapeHtml(p.a)}">🔊 ${escapeHtml(p.a)}</button>
+        <button class="btn ghost" data-say="${escapeHtml(p.b)}">🔊 ${escapeHtml(p.b)}</button>
+        <button class="btn primary" data-act="pair-next">次へ →</button>
+      </div>`;
+  },
+
+  async onClick(e) {
+    const say = e.target.closest('[data-say]');
+    if (say) { speak(say.dataset.say, { lang: 'en-US' }); return; }
+    const pick = e.target.closest('[data-pick]');
+    if (pick) { this.choosePair(pick.dataset.pick, pick); return; }
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!act) return;
+    const [en] = this.mode === 'pairs' ? [''] : this.phrase || [''];
+    switch (act) {
+      case 'listen': speak(en, { lang: 'en-US' }); break;
+      case 'slow': speak(en, { lang: 'en-US', slow: true }); break;
+      case 'prev': this.go(-1); break;
+      case 'next': this.go(1); break;
+      case 'shuffle': this.go(1 + Math.floor(Math.random() * (this.list.length - 1))); break;
+      case 'reveal': this.revealed = true; this.render(); speak(en, { lang: 'en-US' }); break;
+      case 'skip': this.testNext(null); break;
+      case 'retest': this.startTest(); this.render(); break;
+      case 'pair-play': speak(this.pair.answer, { lang: 'en-US' }); break;
+      case 'pair-slow': speak(this.pair.answer, { lang: 'en-US', slow: true }); break;
+      case 'pair-next': this.newPair(); this.renderPairs(); break;
+      case 'check': this.checkDictation(); break;
+      case 'test-next': this.testNext(this.lastScore); break;
+      case 'mic': {
+        $('#pron-result').innerHTML = '<span class="muted">🎧 聞いています… 英語で話してください</span>';
+        const btn = e.target.closest('[data-act]');
+        const heard = await listen(btn, 'en-US', (t) => { $('#pron-result').innerHTML = `<span class="muted">🎧 ${escapeHtml(t)}</span>`; });
+        if (heard === null) return;
+        if (!heard) { $('#pron-result').innerHTML = '<span class="muted">聞き取れませんでした。もう一度どうぞ。</span>'; return; }
+        const wasHidden = this.mode === 'repeat' || this.mode === 'ja2en';
+        if (wasHidden && !this.revealed) { this.revealed = true; this.render(); }
+        this.lastScore = this.judge(heard, en);
+        if (this.test) {
+          $('#pron-result').insertAdjacentHTML('beforeend',
+            `<div class="row center"><button class="btn ghost" data-act="mic">🎤 言い直す</button>
+             <button class="btn primary" data-act="test-next">次へ →</button></div>`);
+        }
+        break;
+      }
+      default:
+    }
+  },
+
+  checkDictation() {
+    const input = $('#dict-input');
+    if (!input || !input.value.trim()) return;
+    const typed = input.value;
+    this.revealed = true;
+    this.render();
+    this.judge(typed, this.phrase[0], 'あなたの答え');
   },
 };
 
 $('#pron-cat').innerHTML = Object.keys(PHRASES).map((c) => `<option>${escapeHtml(c)}</option>`).join('');
-$('#pron-cat').addEventListener('change', (e) => { pron.cat = e.target.value; pron.idx = 0; pron.render(); });
-$('#btn-pron-listen').addEventListener('click', () => speak(pron.phrase[0], { lang: 'en-US' }));
-$('#btn-pron-slow').addEventListener('click', () => speak(pron.phrase[0], { lang: 'en-US', slow: true }));
-$('#btn-pron-prev').addEventListener('click', () => { pron.idx = (pron.idx - 1 + pron.list.length) % pron.list.length; pron.render(); });
-$('#btn-pron-next').addEventListener('click', () => { pron.idx = (pron.idx + 1) % pron.list.length; pron.render(); });
-$('#btn-pron-mic').addEventListener('click', async (e) => {
-  $('#pron-result').innerHTML = '<span class="muted">🎧 聞いています… 英語で読み上げてください</span>';
-  const heard = await listen(e.currentTarget, 'en-US', (t) => {
-    $('#pron-result').innerHTML = `<span class="muted">🎧 ${escapeHtml(t)}</span>`;
-  });
-  if (heard) pron.judge(heard);
-  else if (heard === '') $('#pron-result').innerHTML = '<span class="muted">聞き取れませんでした。もう一度どうぞ。</span>';
+$('#pron-cat').addEventListener('change', (e) => {
+  pron.cat = e.target.value;
+  pron.idx = 0;
+  pron.revealed = false;
+  pron.test = null;
+  pron.pair = null;
+  pron.render();
+});
+$('#pron-modes').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pmode]');
+  if (!b) return;
+  pron.mode = b.dataset.pmode;
+  store.set('pronMode', pron.mode);
+  pron.revealed = false;
+  pron.test = null;
+  pron.pair = null;
+  speechSynthesis.cancel();
+  pron.render();
+});
+$('#pron-area').addEventListener('click', (e) => pron.onClick(e));
+$('#pron-area').addEventListener('keydown', (e) => {
+  if (e.target.id === 'dict-input' && e.key === 'Enter' && !e.isComposing) pron.checkDictation();
 });
 
 // ---------- 単語帳 ----------

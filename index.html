@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <header class="app-header">
@@ -126,21 +126,8 @@
         <span class="spacer"></span>
         <span id="pron-score-total" class="muted"></span>
       </div>
-      <div class="card pron-card">
-        <div id="pron-en" class="pron-en"></div>
-        <div id="pron-ja" class="muted"></div>
-        <div class="row center">
-          <button id="btn-pron-listen" class="btn ghost">🔊 お手本</button>
-          <button id="btn-pron-slow" class="btn ghost">🐢 ゆっくり</button>
-          <button id="btn-pron-mic" class="btn mic big">🎤 発音する</button>
-        </div>
-        <div id="pron-result" class="pron-result"></div>
-        <div class="row center">
-          <button id="btn-pron-prev" class="btn ghost">← 前へ</button>
-          <span id="pron-pos" class="muted"></span>
-          <button id="btn-pron-next" class="btn ghost">次へ →</button>
-        </div>
-      </div>
+      <div id="pron-modes" class="modes pron-modes"></div>
+      <div id="pron-area"></div>
     </section>
 
     <!-- 単語帳 -->
@@ -263,8 +250,8 @@
   <div id="toast" class="toast"></div>
   <div id="tooltip" class="tooltip" role="tooltip"></div>
 
-  <script src="data.js?v=9"></script>
-  <script src="vocab.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <script src="data.js?v=12"></script>
+  <script src="vocab.js?v=12"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
