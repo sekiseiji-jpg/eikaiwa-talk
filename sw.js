@@ -1,6 +1,7 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
-// 公開ファイルを更新したら CACHE の番号を上げる
-const CACHE = 'eikaiwa-v4';
+// 公開ファイルを更新したら CACHE の番号と、index.html の ?v= の番号を一緒に上げる
+// （?v= で index.html と同じ版の CSS/JS を読むので、更新の途中で新旧が混ざらない）
+const CACHE = 'eikaiwa-v5';
 const FILES = [
   './',
   'index.html',
@@ -43,6 +44,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(req, copy));
         return res;
       })
-      .catch(() => caches.match(req).then((r) => r || caches.match('index.html'))),
+      .catch(() => caches.match(req, { ignoreSearch: true }).then((r) => r || caches.match('index.html'))),
   );
 });
