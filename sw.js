@@ -1,7 +1,7 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
 // 公開ファイルを更新したら CACHE の番号と、index.html の ?v= の番号を一緒に上げる
 // （?v= で index.html と同じ版の CSS/JS を読むので、更新の途中で新旧が混ざらない）
-const CACHE = 'eikaiwa-v6';
+const CACHE = 'eikaiwa-v7';
 const FILES = [
   './',
   'index.html',

@@ -121,7 +121,7 @@ if ('speechSynthesis' in window) {
   speechSynthesis.onvoiceschanged = loadVoices;
 }
 
-function speak(text, { lang, slow } = {}) {
+function speak(text, { lang, slow, rateScale = 1 } = {}) {
   if (!('speechSynthesis' in window) || !text) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
@@ -133,7 +133,7 @@ function speak(text, { lang, slow } = {}) {
     const v = voices.find((x) => x.lang === 'ja-JP');
     if (v) u.voice = v;
   }
-  u.rate = slow ? Math.max(0.5, settings.rate - 0.3) : settings.rate;
+  u.rate = (slow ? Math.max(0.5, settings.rate - 0.3) : settings.rate) * rateScale;
   speechSynthesis.speak(u);
 }
 
@@ -659,12 +659,54 @@ $('#ai-topic').innerHTML = '<option value="random">🎲 おまかせ（ランダ
     `<option value="${k}">${escapeHtml(label)}</option>`).join('')}</optgroup>`).join('');
 const savedTopic = store.get('aiTopic', 'free');
 $('#ai-topic').value = (TOPICS[savedTopic] || savedTopic === 'random') ? savedTopic : 'free';
-$('#ai-level').value = store.get('aiLevel', 'intermediate');
+// label: 表示名 / prompt: AIへの指示 / feedback: 添削の細かさ / showJa: 日本語訳を最初から表示 / rate: 読み上げ速度の倍率
 const LEVELS = {
-  beginner: 'a beginner (CEFR A1-A2). Use very simple words and short sentences.',
-  intermediate: 'an intermediate learner (CEFR B1-B2). Use natural everyday English.',
-  advanced: 'an advanced learner (CEFR C1). Use natural, idiomatic English.',
+  starter: {
+    label: '超初級（英検5〜4級）',
+    prompt: 'a true beginner (CEFR A1, about junior high school year 1). Use only the most basic words and very short sentences (8 words or fewer), mostly present tense. Ask one simple yes/no or either/or question at a time.',
+    feedback: 'Only point out the single most important mistake, very gently and simply. Praise effort.',
+    showJa: true, rate: 0.8,
+  },
+  beginner: {
+    label: '初級（英検3級 / TOEIC 〜400）',
+    prompt: 'a beginner (CEFR A2). Use simple everyday words and short sentences (12 words or fewer). Avoid idioms and phrasal verbs.',
+    feedback: 'Point out only clear grammar mistakes, gently, with a simple corrected sentence.',
+    showJa: true, rate: 0.9,
+  },
+  elementary: {
+    label: '初中級（英検準2級 / TOEIC 400〜550）',
+    prompt: 'a pre-intermediate learner (CEFR A2-B1). Use simple, natural English and common expressions. Keep sentences fairly short.',
+    feedback: 'Point out grammar mistakes and unnatural word choices, briefly.',
+    showJa: false, rate: 0.95,
+  },
+  intermediate: {
+    label: '中級（英検2級 / TOEIC 550〜750）',
+    prompt: 'an intermediate learner (CEFR B1-B2). Use natural everyday English, including common phrasal verbs.',
+    feedback: 'Point out grammar mistakes and unnatural phrasing, and suggest a more natural version.',
+    showJa: false, rate: 1,
+  },
+  upper: {
+    label: '中上級（英検準1級 / TOEIC 750〜900）',
+    prompt: 'an upper-intermediate learner (CEFR B2-C1). Use natural English with common idioms, and ask follow-up questions that invite opinions and reasons.',
+    feedback: 'Point out mistakes and also suggest more natural or more precise expressions a native speaker would use.',
+    showJa: false, rate: 1,
+  },
+  advanced: {
+    label: '上級（英検1級 / TOEIC 900〜）',
+    prompt: 'an advanced learner (CEFR C1). Use natural, idiomatic English with nuanced vocabulary; replies may be 2-4 sentences. Challenge the learner with deeper questions.',
+    feedback: 'Focus on nuance, register (formal/casual), collocations and more sophisticated alternatives, not just errors.',
+    showJa: false, rate: 1.05,
+  },
+  native: {
+    label: 'ネイティブ並み',
+    prompt: 'a near-native speaker (CEFR C2). Talk exactly like a native speaker friend: casual, fast-paced, with idioms, slang that is common and not offensive, and natural contractions.',
+    feedback: 'Only comment on things that sound unnatural to a native speaker, and suggest how a native would say it.',
+    showJa: false, rate: 1.1,
+  },
 };
+$('#ai-level').innerHTML = Object.entries(LEVELS).map(([k, l]) => `<option value="${k}">${escapeHtml(l.label)}</option>`).join('');
+$('#ai-level').value = LEVELS[store.get('aiLevel')] ? store.get('aiLevel') : 'intermediate';
+const aiLevel = () => LEVELS[$('#ai-level').value] || LEVELS.intermediate;
 
 const ai = {
   messages: [],
@@ -673,16 +715,20 @@ const ai = {
 
   system() {
     const t = TOPICS[this.topic] || TOPICS.free;
-    return `You are a friendly English conversation partner for a Japanese learner who is ${LEVELS[$('#ai-level').value]}
+    const lv = aiLevel();
+    return `You are a friendly English conversation partner for a Japanese learner who is ${lv.prompt}
 Topic: ${t.prompt}.
-Keep the conversation going: reply in 1-3 sentences and usually end with a question.
+Keep the conversation going: reply in 1-3 sentences (unless the level says otherwise) and usually end with a question.
+Always match your English to the learner's level described above.
 In a role-play, stay in character for the whole conversation and play your role naturally.
 If the learner writes Japanese, understand it and gently show how to say it in English.
+
+Feedback policy for this level: ${lv.feedback}
 
 Always answer in exactly this format:
 REPLY: <your English reply>
 JA: <natural Japanese translation of your reply>
-FEEDBACK: <In Japanese, point out grammar or wording mistakes in the learner's last message and give a more natural English version. If it was already natural, write なし. For the very first message write なし.>`;
+FEEDBACK: <In Japanese, following the feedback policy, comment on the learner's last message and give a better English version. If there is nothing to fix, write なし. For the very first message write なし.>`;
   },
 
   onOpen() {
@@ -701,7 +747,8 @@ FEEDBACK: <In Japanese, point out grammar or wording mistakes in the learner's l
     const keys = Object.keys(TOPICS);
     this.topic = sel === 'random' ? keys[Math.floor(Math.random() * keys.length)] : sel;
     if (!settings.apiKey) { this.onOpen(); return; }
-    addHtml($('#ai-chat'), 'bubble system', `トピック：<b>${escapeHtml(TOPICS[this.topic].label)}</b>${this.topic.startsWith('rp_') ? '（AIが役を演じます）' : ''}`);
+    addHtml($('#ai-chat'), 'bubble system', `トピック：<b>${escapeHtml(TOPICS[this.topic].label)}</b>${this.topic.startsWith('rp_') ? '（AIが役を演じます）' : ''}`
+      + `<br>レベル：${escapeHtml(aiLevel().label)}`);
     this.send('(Please start the conversation. In a role-play, begin in character.)', true);
   },
 
@@ -733,9 +780,11 @@ FEEDBACK: <In Japanese, point out grammar or wording mistakes in the learner's l
       if (!hidden && p.feedback && p.feedback !== 'なし') {
         addHtml(chat, 'feedback ok', '✏️ ' + escapeHtml(p.feedback).replace(/\n/g, '<br>'));
       }
-      addBubble(chat, 'ai', p.reply, p.ja);
+      const lv = aiLevel();
+      const bubble = addBubble(chat, 'ai', p.reply, p.ja);
+      if (lv.showJa && p.ja) bubble.querySelector('.sub').classList.remove('hidden'); // 初級までは日本語訳を最初から表示
       if (!hidden) stats.add('ai');
-      if ($('#ai-autospeak').checked) speak(p.reply, { lang: 'en-US' });
+      if ($('#ai-autospeak').checked) speak(p.reply, { lang: 'en-US', rateScale: lv.rate });
     } catch (e) {
       if (conv !== this.conv) return;
       typing.remove();
