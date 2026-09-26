@@ -871,6 +871,23 @@ const MY_WORDS = '★ マイ単語';
 const ALL_WORDS = '🔀 すべての単語';
 const MASTERED = 3; // このレベル以上で「覚えた」
 
+// クイズの形式 [キー, 名前, 説明]
+const QUIZ_KINDS = [
+  ['mix', '🔀 ミックス', 'いろいろな形式がランダムに出る'],
+  ['en2ja', '🇬🇧→🇯🇵 意味を選ぶ', '英単語を見て日本語を4択'],
+  ['ja2en', '🇯🇵→🇬🇧 英語を選ぶ', '日本語を見て英単語を4択'],
+  ['listen', '🎧 リスニング', '発音を聞いて意味を4択'],
+  ['cloze', '📝 例文の穴埋め', '例文の空欄に入る単語を4択'],
+  ['tf', '⭕❌ ○×クイズ', '単語と意味の組み合わせは正しい？'],
+  ['order', '🧩 例文の並べ替え', 'バラバラの単語を正しい順に'],
+  ['speak', '🎤 スピーキング', '日本語を見て英語で言う'],
+  ['time', '⏱️ タイムアタック', '60秒で何問正解できるか'],
+];
+const QUIZ_LABELS = {
+  en2ja: '意味は？', ja2en: '英語では？', listen: '🎧 聞こえた単語の意味は？', cloze: '📝 空欄に入る単語は？',
+  tf: '⭕❌ 正しい？', order: '🧩 正しい順に並べよう', speak: '🎤 英語で言おう',
+};
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -947,6 +964,7 @@ const vocab = {
   },
 
   render() {
+    this.stopTimer();
     this.renderProgress();
     document.querySelectorAll('.mode').forEach((m) => m.classList.toggle('active', m.dataset.mode === this.mode));
     const ws = this.words();
@@ -1085,61 +1103,253 @@ const vocab = {
     this.renderCard();
   },
 
-  // ----- 4択クイズ -----
-  startQuiz() {
-    const qs = this.pick(10);
+  // ----- クイズ -----
+  quizKind: store.get('quizKind', 'mix'),
+  quizCount: store.get('quizCount', 10),
+  timer: null,
+
+  startQuiz() { this.renderQuizMenu(); },
+
+  stopTimer() {
+    clearInterval(this.timer);
+    this.timer = null;
+  },
+
+  renderQuizMenu() {
+    this.stopTimer();
+    this.session = null;
+    const best = store.get('timeBest', {})[this.cat];
+    const chip = (n) => `<button class="chip ${this.quizCount === n ? 'active' : ''}" data-count="${n}">${n}問</button>`;
+    $('#vocab-area').innerHTML = `
+      <div class="filter-row"><span class="muted">問題数</span>${[10, 20, 30].map(chip).join('')}</div>
+      <div class="quiz-menu">${QUIZ_KINDS.map(([k, name, desc]) => `
+        <button class="quiz-kind ${this.quizKind === k ? 'last' : ''}" data-kind="${k}">
+          <div class="name">${name}</div>
+          <div class="desc">${desc}${k === 'time' && best ? `<br><b>ベスト ${best}問</b>` : ''}</div>
+        </button>`).join('')}
+      </div>`;
+  },
+
+  /** 例文の見出し語の部分を空欄にする。見つからなければ null */
+  clozeOf(w) {
+    if (!w.ex) return null;
+    const en = w.en.toLowerCase();
+    if (en.includes(' ')) {
+      const i = w.ex.toLowerCase().indexOf(en);
+      return i < 0 ? null : w.ex.slice(0, i) + '_____' + w.ex.slice(i + en.length);
+    }
+    const stem = en.length > 4 ? en.replace(/(e|y)$/, '') : en;
+    const parts = w.ex.split(/(\s+)/);
+    const k = parts.findIndex((t) => {
+      const word = t.toLowerCase().replace(/[^a-z']/g, '');
+      return en.length <= 3 ? [en, en + 's', en + 'es', en + 'ed'].includes(word)
+        : word.startsWith(stem) && word.length <= en.length + 4;
+    });
+    if (k < 0) return null;
+    parts[k] = parts[k].replace(/[A-Za-z'’-]+/, '_____');
+    return parts.join('');
+  },
+
+  makeQ(w, type, pool) {
+    const others = (n) => shuffle(pool.filter((x) => x.en !== w.en)).slice(0, n);
+    if (type === 'cloze') {
+      const sentence = this.clozeOf(w);
+      return sentence && { w, type, sentence, choices: shuffle([w, ...others(3)]) };
+    }
+    if (type === 'tf') {
+      const truth = Math.random() < 0.5;
+      const shownJa = truth ? w.ja : (others(1)[0] || w).ja;
+      return { w, type, truth: shownJa === w.ja, shownJa };
+    }
+    if (type === 'order') {
+      const tokens = (w.ex || '').split(/\s+/).filter(Boolean);
+      if (tokens.length < 3 || tokens.length > 12) return null;
+      let tiles;
+      do { tiles = shuffle(tokens.map((t, id) => ({ t, id }))); } while (tiles.map((x) => x.t).join(' ') === tokens.join(' '));
+      return { w, type, tokens, tiles, picked: [] };
+    }
+    if (type === 'speak') return { w, type, tries: 0 };
+    return { w, type, choices: shuffle([w, ...others(3)]) };
+  },
+
+  beginQuiz(kind) {
+    this.stopTimer();
+    this.quizKind = kind;
+    store.set('quizKind', kind);
     let pool = this.words();
     if (pool.length < 4) pool = this.words(ALL_WORDS);
-    this.session = {
-      qs: qs.map((w) => {
-        const type = ['en2ja', 'ja2en', 'listen'][Math.floor(Math.random() * 3)];
-        const others = shuffle(pool.filter((x) => x.en !== w.en)).slice(0, 3);
-        return { w, type, choices: shuffle([w, ...others]) };
-      }),
-      i: 0, correct: 0, wrong: [], answered: false,
-    };
+    this.session = { kind, pool, i: 0, correct: 0, wrong: [], answered: false, qs: [] };
+    const s = this.session;
+    if (kind === 'time') {
+      s.end = Date.now() + 60_000;
+      s.qs.push(this.randomQ(pool));
+      this.timer = setInterval(() => {
+        if (this.session !== s) { this.stopTimer(); return; }
+        const left = Math.max(0, Math.ceil((s.end - Date.now()) / 1000));
+        const el = $('#quiz-timer');
+        if (el) el.textContent = `⏱️ 残り ${left}秒 ・ 正解 ${s.correct}`;
+        if (left <= 0) this.finishTime();
+      }, 250);
+    } else {
+      const MIX = ['en2ja', 'ja2en', 'listen', 'cloze', 'tf'];
+      // 穴埋め・並べ替えは例文が使える単語だけなので多めに候補を取る
+      for (const w of this.pick(this.quizCount * 4)) {
+        if (s.qs.length >= this.quizCount) break;
+        const type = kind === 'mix' ? MIX[Math.floor(Math.random() * MIX.length)] : kind;
+        const q = this.makeQ(w, type, pool) || (kind === 'mix' ? this.makeQ(w, 'en2ja', pool) : null);
+        if (q) s.qs.push(q);
+      }
+      if (!s.qs.length) { toast('この単語帳ではこの形式の問題が作れません'); this.renderQuizMenu(); return; }
+    }
     this.renderQuiz();
+  },
+
+  randomQ(pool) {
+    const w = pool[Math.floor(Math.random() * pool.length)];
+    return this.makeQ(w, Math.random() < 0.5 ? 'en2ja' : 'ja2en', pool);
+  },
+
+  finishTime() {
+    const s = this.session;
+    this.stopTimer();
+    const all = store.get('timeBest', {});
+    const isBest = s.correct > (all[this.cat] || 0);
+    if (isBest) { all[this.cat] = s.correct; store.set('timeBest', all); }
+    this.renderResult(s.correct, s.i + (s.answered ? 1 : 0), s.wrong,
+      `<p>⏱️ 60秒で <b>${s.correct}問</b> 正解${isBest ? '（ベスト更新！🎉）' : ''}</p>`);
   },
 
   renderQuiz() {
     const s = this.session;
-    if (s.i >= s.qs.length) { this.renderResult(s.correct, s.qs.length, s.wrong); return; }
-    const { w, type, choices } = s.qs[s.i];
-    const label = { en2ja: '意味は？', ja2en: '英語では？', listen: '🎧 聞こえた単語の意味は？' }[type];
-    const q = type === 'en2ja' ? escapeHtml(w.en) : type === 'ja2en' ? escapeHtml(w.ja) : '<button class="btn ghost big" data-act="speak">🔊 もう一度</button>';
-    $('#vocab-area').innerHTML = `
-      <div class="card quiz-q">
-        <div class="muted">${s.i + 1} / ${s.qs.length} ・ ${label}</div>
-        <div class="q">${q}</div>
-      </div>
-      <div class="choices">${choices.map((c, k) => `
-        <button class="choice" data-k="${k}">${escapeHtml(type === 'ja2en' ? c.en : c.ja)}</button>`).join('')}
-      </div>
-      <div id="quiz-next" class="row center"></div>`;
+    if (!s.end && s.i >= s.qs.length) { this.renderResult(s.correct, s.qs.length, s.wrong); return; }
+    const q = s.qs[s.i];
+    const { w, type } = q;
+    const head = s.end
+      ? `<div id="quiz-timer" class="muted">⏱️ 残り ${Math.max(0, Math.ceil((s.end - Date.now()) / 1000))}秒 ・ 正解 ${s.correct}</div>`
+      : `<div class="muted">${s.i + 1} / ${s.qs.length} ・ ${QUIZ_LABELS[type]}</div>`;
+    let body = '';
+    if (['en2ja', 'ja2en', 'listen', 'cloze'].includes(type)) {
+      const qText = type === 'en2ja' ? escapeHtml(w.en)
+        : type === 'ja2en' ? escapeHtml(w.ja)
+        : type === 'listen' ? '<button class="btn ghost big" data-act="speak">🔊 もう一度</button>'
+        : `<div class="cloze">${escapeHtml(q.sentence).replace('_____', '<span class="blank">＿＿＿</span>')}</div><div class="muted">ヒント：${escapeHtml(w.ja)}</div>`;
+      body = `<div class="card quiz-q">${head}<div class="q">${qText}</div></div>
+        <div class="choices">${q.choices.map((c, k) => `
+          <button class="choice" data-k="${k}">${escapeHtml(type === 'ja2en' || type === 'cloze' ? c.en : c.ja)}</button>`).join('')}
+        </div>`;
+    } else if (type === 'tf') {
+      body = `<div class="card quiz-q">${head}
+          <div class="q">${escapeHtml(w.en)}</div>
+          <div class="tf-ja">＝ ${escapeHtml(q.shownJa)} ？</div></div>
+        <div class="choices"><button class="choice tf" data-tf="1">⭕ 正しい</button><button class="choice tf" data-tf="0">❌ ちがう</button></div>`;
+    } else if (type === 'order') {
+      const used = new Set(q.picked.map((x) => x.id));
+      body = `<div class="card quiz-q">${head}
+          <div class="muted">ヒント：<b>${escapeHtml(w.en)}</b>（${escapeHtml(w.ja)}）を使った文</div>
+          <div class="order-line">${q.picked.map((x) => `<button class="tile placed" data-pid="${x.id}">${escapeHtml(x.t)}</button>`).join('') || '<span class="muted">下の単語をタップして並べよう</span>'}</div></div>
+        <div class="word-tiles">${q.tiles.map((x) => `<button class="tile" data-tid="${x.id}" ${used.has(x.id) ? 'disabled' : ''}>${escapeHtml(x.t)}</button>`).join('')}</div>
+        <div class="row center"><button class="btn ghost" data-act="reset-order">↩️ やり直す</button></div>`;
+    } else if (type === 'speak') {
+      body = `<div class="card quiz-q">${head}
+          <div class="q">${escapeHtml(w.ja)}</div>
+          <div class="muted">英語で言ってみよう</div>
+          <div class="row center">
+            <button class="btn mic big" data-act="mic">🎤 話す</button>
+            <button class="btn ghost" data-act="giveup">答えを見る</button>
+          </div>
+          <div id="speak-heard" class="muted"></div></div>`;
+    }
+    $('#vocab-area').innerHTML = body + '<div id="quiz-next" class="row center"></div>';
     if (type === 'listen') speak(w.en, { lang: 'en-US' });
   },
 
-  onQuizClick(e) {
+  /** 正誤を記録して結果を表示する */
+  answerQuiz(ok) {
     const s = this.session;
-    if (e.target.closest('[data-act=restart]')) { this.startQuiz(); return; }
-    if (e.target.closest('[data-act=speak]')) { speak(s.qs[s.i].w.en, { lang: 'en-US' }); return; }
-    if (e.target.closest('[data-act=next]')) { s.i++; s.answered = false; this.renderQuiz(); return; }
-    const btn = e.target.closest('.choice');
-    if (!btn || s.answered) return;
+    const { w } = s.qs[s.i];
     s.answered = true;
-    const { w, choices } = s.qs[s.i];
-    const ok = choices[+btn.dataset.k].en === w.en;
-    document.querySelectorAll('.choice').forEach((b) => {
-      if (choices[+b.dataset.k].en === w.en) b.classList.add('correct');
-    });
     if (ok) { s.correct++; this.setLv(w.en, this.lv(w.en) + 1); }
-    else { btn.classList.add('wrong'); s.wrong.push(w); this.setLv(w.en, 0); stats.miss(w.en); }
+    else { s.wrong.push(w); this.setLv(w.en, 0); stats.miss(w.en); }
     stats.add('quiz', ok);
-    speak(w.en, { lang: 'en-US' });
     this.renderProgress();
+    if (s.end) { // タイムアタックはテンポよく次へ
+      setTimeout(() => { if (this.session === s && Date.now() < s.end) this.nextQ(); }, ok ? 350 : 1100);
+      $('#quiz-next').innerHTML = ok ? '⭕' : `❌ <b>${escapeHtml(w.en)}</b> = ${escapeHtml(w.ja)}`;
+      return;
+    }
+    speak(s.qs[s.i].type === 'order' ? w.ex : w.en, { lang: 'en-US' });
     $('#quiz-next').innerHTML = `
-      <div>${ok ? '⭕ 正解！' : '❌ 不正解'} <b>${escapeHtml(w.en)}</b> = ${escapeHtml(w.ja)}</div>
+      <div>${ok ? '⭕ 正解！' : '❌ 不正解'} <b>${escapeHtml(w.en)}</b> = ${escapeHtml(w.ja)}
+        ${w.ex ? `<div class="muted"><i>${escapeHtml(w.ex)}</i></div>` : ''}</div>
       <button class="btn primary" data-act="next">次へ →</button>`;
+  },
+
+  nextQ() {
+    const s = this.session;
+    s.i++;
+    s.answered = false;
+    if (s.end && s.i >= s.qs.length) s.qs.push(this.randomQ(s.pool));
+    this.renderQuiz();
+  },
+
+  async onQuizClick(e) {
+    const t = (sel) => e.target.closest(sel);
+    if (t('[data-count]')) { this.quizCount = +t('[data-count]').dataset.count; store.set('quizCount', this.quizCount); this.renderQuizMenu(); return; }
+    if (t('[data-kind]')) { this.beginQuiz(t('[data-kind]').dataset.kind); return; }
+    if (t('[data-act=menu]')) { this.renderQuizMenu(); return; }
+    if (t('[data-act=restart]')) { this.beginQuiz(this.quizKind); return; }
+    const s = this.session;
+    if (!s || !s.qs[s.i]) return;
+    const q = s.qs[s.i];
+    if (t('[data-act=speak]')) { speak(q.w.en, { lang: 'en-US' }); return; }
+    if (t('[data-act=next]')) { this.nextQ(); return; }
+    if (s.answered) return;
+
+    const choice = t('.choice[data-k]');
+    if (choice) {
+      const ok = q.choices[+choice.dataset.k].en === q.w.en;
+      document.querySelectorAll('.choice[data-k]').forEach((b) => {
+        if (q.choices[+b.dataset.k].en === q.w.en) b.classList.add('correct');
+      });
+      if (!ok) choice.classList.add('wrong');
+      this.answerQuiz(ok);
+      return;
+    }
+    const tf = t('[data-tf]');
+    if (tf) {
+      const ok = (tf.dataset.tf === '1') === q.truth;
+      tf.classList.add(ok ? 'correct' : 'wrong');
+      this.answerQuiz(ok);
+      return;
+    }
+    if (q.type === 'order') {
+      if (t('[data-act=reset-order]')) { q.picked = []; this.renderQuiz(); return; }
+      const placed = t('[data-pid]');
+      if (placed) { q.picked = q.picked.filter((x) => x.id !== +placed.dataset.pid); this.renderQuiz(); return; }
+      const tile = t('[data-tid]');
+      if (tile && !tile.disabled) {
+        q.picked.push(q.tiles.find((x) => x.id === +tile.dataset.tid));
+        this.renderQuiz();
+        if (q.picked.length === q.tokens.length) {
+          const ok = q.picked.map((x) => x.t).join(' ') === q.tokens.join(' ');
+          document.querySelector('.order-line').classList.add(ok ? 'correct' : 'wrong');
+          this.answerQuiz(ok);
+        }
+      }
+      return;
+    }
+    if (q.type === 'speak') {
+      if (t('[data-act=giveup]')) { this.answerQuiz(false); return; }
+      const mic = t('[data-act=mic]');
+      if (mic) {
+        const heard = await listen(mic, 'en-US', (x) => { $('#speak-heard').textContent = '🎧 ' + x; });
+        if (!heard || this.session !== s || s.answered) return;
+        const nh = ` ${normalizeWord(heard)} `;
+        const ok = nh.includes(` ${normalizeWord(q.w.en)} `);
+        if (ok) { $('#speak-heard').textContent = `🎧 “${heard}”`; this.answerQuiz(true); }
+        else $('#speak-heard').textContent = `🎧 “${heard}” … もう一度 話すか「答えを見る」`;
+      }
+    }
   },
 
   // ----- スペル練習 -----
@@ -1206,16 +1416,18 @@ const vocab = {
     }
   },
 
-  renderResult(correct, total, wrong) {
-    const score = Math.round((100 * correct) / total);
+  renderResult(correct, total, wrong, extra = '') {
+    const score = total ? Math.round((100 * correct) / total) : 0;
     const cls = scoreClass(score);
     $('#vocab-area').innerHTML = `
       <div class="card result-box">
         <div class="big-score score ${cls}">${correct} / ${total}</div>
+        ${extra}
         <p>${score >= 80 ? 'すばらしい！🎉' : score >= 60 ? 'いい調子！👍' : '復習してもう一度！💪'}</p>
         ${wrong.length ? `<p class="muted">まちがえた単語</p>
           <ul class="list">${wrong.map((w) => `<li><div class="txt"><div class="en">${escapeHtml(w.en)}</div><div class="ja">${escapeHtml(w.ja)}</div></div></li>`).join('')}</ul>` : ''}
         <button class="btn primary" data-act="restart">もう一度</button>
+        ${this.mode === 'quiz' ? '<button class="btn ghost" data-act="menu">形式を選ぶ</button>' : ''}
       </div>`;
   },
 };
