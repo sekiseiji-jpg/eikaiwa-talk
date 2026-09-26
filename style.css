@@ -173,7 +173,12 @@ textarea { resize: vertical; font-size: 1.05rem; }
 .badge { font-size: .75rem; padding: 1px 8px; border-radius: 999px; margin-left: 6px; font-weight: 400; }
 .badge.done { background: var(--good); color: #fff; }
 .badge.learning { background: var(--ok); color: #fff; }
-.filter-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.filter-row { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.filter-row #vocab-count { margin-left: auto; font-size: .85rem; }
+input.search {
+  width: 100%; font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px;
+}
 .chip { font: inherit; font-size: .85rem; border: 1px solid var(--border); background: transparent; color: var(--muted); border-radius: 999px; padding: 2px 12px; cursor: pointer; }
 .chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 
@@ -309,7 +314,7 @@ button, .chip, .choice, .scn-card, .flashcard { touch-action: manipulation; -web
   body.kb-open { padding-bottom: 0; }
 
   /* 入力欄は16px以上にして iOS の自動ズームを防ぐ */
-  textarea, input[type=text], input[type=password], select { font-size: 16px; }
+  textarea, input[type=text], input[type=password], input[type=search], select { font-size: 16px; }
   .btn { min-height: 44px; padding: 8px 12px; }
   .row { flex-wrap: wrap; }
   .card { padding: 12px; }

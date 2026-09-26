@@ -775,11 +775,16 @@ const vocab = {
     return (VOCAB[cat] || []).map(toObj);
   },
 
-  lv(en) { return store.get('vocabLv', {})[en] || 0; },
+  // 単語数が多いので習熟度はメモリに持ち、変更時だけ保存する
+  lvMap: null,
+  lv(en) {
+    if (!this.lvMap) this.lvMap = store.get('vocabLv', {});
+    return this.lvMap[en] || 0;
+  },
   setLv(en, v) {
-    const all = store.get('vocabLv', {});
-    all[en] = Math.max(0, v);
-    store.set('vocabLv', all);
+    this.lv(en);
+    this.lvMap[en] = Math.max(0, v);
+    store.set('vocabLv', this.lvMap);
   },
   isDone(en) { return this.lv(en) >= MASTERED; },
 
@@ -824,13 +829,32 @@ const vocab = {
   },
 
   // ----- 一覧 -----
+  query: '',
+  shown: 50, // 一覧に一度に表示する数（「もっと見る」で増える）
+
   renderList() {
-    const ws = this.words().filter((w) =>
-      this.filter === 'all' || (this.filter === 'done' ? this.isDone(w.en) : !this.isDone(w.en)));
     const chip = (key, label) => `<button class="chip ${this.filter === key ? 'active' : ''}" data-filter="${key}">${label}</button>`;
     $('#vocab-area').innerHTML = `
-      <div class="filter-row">${chip('all', 'すべて')}${chip('todo', 'まだ')}${chip('done', '覚えた')}</div>
-      <ul class="list">${ws.length ? ws.map((w) => `
+      <input id="vocab-search" class="search" type="search" placeholder="🔍 すべての単語から検索（英語・日本語）" value="${escapeHtml(this.query)}">
+      <div class="filter-row">${chip('all', 'すべて')}${chip('todo', 'まだ')}${chip('done', '覚えた')}<span id="vocab-count" class="muted"></span></div>
+      <ul id="vocab-ul" class="list"></ul>
+      <div id="vocab-more" class="row center"></div>`;
+    this.renderListItems();
+  },
+
+  listWords() {
+    const q = this.query.trim().toLowerCase();
+    const base = q
+      ? this.words(ALL_WORDS).filter((w) => w.en.toLowerCase().includes(q) || w.ja.includes(q))
+      : this.words();
+    return base.filter((w) => this.filter === 'all' || (this.filter === 'done' ? this.isDone(w.en) : !this.isDone(w.en)));
+  },
+
+  renderListItems() {
+    const ws = this.listWords();
+    const page = ws.slice(0, this.shown);
+    $('#vocab-count').textContent = `${ws.length} 語`;
+    $('#vocab-ul').innerHTML = page.length ? page.map((w) => `
         <li class="vocab-item" data-en="${escapeHtml(w.en)}">
           <div class="txt">
             <div class="en">${escapeHtml(w.en)}${this.badge(w.en)}</div>
@@ -840,19 +864,21 @@ const vocab = {
           <button class="btn ghost" data-act="ex" title="例文を読み上げ" ${w.ex ? '' : 'disabled'}>💬</button>
           <button class="btn ghost" data-act="done" title="覚えた／戻す">${this.isDone(w.en) ? '↩️' : '✅'}</button>
           ${w.mine ? '<button class="btn ghost" data-act="del" title="削除">🗑️</button>' : ''}
-        </li>`).join('') : '<li class="muted">該当する単語はありません</li>'}
-      </ul>`;
+        </li>`).join('') : '<li class="muted">該当する単語はありません</li>';
+    $('#vocab-more').innerHTML = ws.length > this.shown
+      ? `<button class="btn ghost" data-act="more">もっと見る（残り ${ws.length - this.shown} 語）</button>` : '';
   },
 
   onListClick(e) {
     const chip = e.target.closest('[data-filter]');
-    if (chip) { this.filter = chip.dataset.filter; this.renderList(); return; }
+    if (chip) { this.filter = chip.dataset.filter; this.shown = 50; this.renderList(); return; }
+    if (e.target.closest('[data-act=more]')) { this.shown += 100; this.renderListItems(); return; }
     const li = e.target.closest('li[data-en]');
     if (!li) return;
-    const w = this.words().find((x) => x.en === li.dataset.en);
+    const w = this.words(ALL_WORDS).find((x) => x.en === li.dataset.en);
     const act = e.target.closest('button')?.dataset.act;
     if (act === 'ex') speak(w.ex, { lang: 'en-US' });
-    else if (act === 'done') { this.setLv(w.en, this.isDone(w.en) ? 0 : MASTERED); this.renderProgress(); this.renderList(); }
+    else if (act === 'done') { this.setLv(w.en, this.isDone(w.en) ? 0 : MASTERED); this.renderProgress(); this.renderListItems(); }
     else if (act === 'del') {
       store.set('myWords', store.get('myWords', []).filter((x) => x.en !== w.en));
       this.render();
@@ -1064,6 +1090,8 @@ const vocab = {
 
 $('#vocab-cat').addEventListener('change', (e) => {
   vocab.cat = e.target.value;
+  vocab.shown = 50;
+  vocab.query = '';
   store.set('vocabCat', vocab.cat);
   vocab.render();
 });
@@ -1076,6 +1104,15 @@ $('#vocab-area').addEventListener('click', (e) => {
   if (vocab.mode === 'card') vocab.onCardClick(e);
   if (vocab.mode === 'quiz') vocab.onQuizClick(e);
   if (vocab.mode === 'spell') vocab.onSpellClick(e);
+});
+$('#vocab-area').addEventListener('input', (e) => {
+  if (e.target.id !== 'vocab-search') return;
+  clearTimeout(vocab.searchTimer);
+  vocab.searchTimer = setTimeout(() => {
+    vocab.query = e.target.value;
+    vocab.shown = 50;
+    vocab.renderListItems();
+  }, 150);
 });
 $('#vocab-area').addEventListener('keydown', (e) => {
   if (vocab.mode === 'spell' && e.target.id === 'spell-input' && e.key === 'Enter' && !e.isComposing) vocab.checkSpell();
