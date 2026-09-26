@@ -605,14 +605,61 @@ $('#btn-scn-repeat').addEventListener('click', () => {
 });
 
 // ---------- AI フリートーク ----------
-const TOPICS = {
-  free: 'anything the learner wants to talk about (casual small talk)',
-  hobby: "the learner's hobbies and interests",
-  travel: 'travel experiences and dream destinations',
-  work: "the learner's job and work life",
-  food: 'food, cooking and restaurants',
-  interview: 'a job interview in English (you are the interviewer; ask typical interview questions one at a time)',
-};
+// [キー, 表示名, AIへの指示]。ロールプレイは AI が役を演じる
+const TOPIC_GROUPS = [
+  ['💬 雑談', [
+    ['free', '自由に雑談', 'anything the learner wants to talk about (casual small talk)'],
+    ['today', '今日の出来事', 'what the learner did today and how their day went'],
+    ['weekend', '週末の予定・過ごし方', "the learner's weekend plans or how they spent last weekend"],
+    ['hobby', '趣味', "the learner's hobbies and interests"],
+    ['food', '食べ物・料理', 'food, cooking, favorite dishes and restaurants'],
+    ['travel', '旅行の思い出', 'travel experiences and dream destinations'],
+    ['movies', '映画・ドラマ・アニメ', 'movies, TV dramas, anime and what the learner has watched recently'],
+    ['music', '音楽', 'music, favorite artists, concerts and karaoke'],
+    ['sports', 'スポーツ・運動', 'sports, exercise and staying active'],
+    ['family', '家族・友達', "the learner's family and friends"],
+    ['pets', 'ペット・動物', 'pets and animals'],
+    ['childhood', '子どもの頃の思い出', "the learner's childhood memories and school days"],
+    ['dreams', '将来の夢・目標', "the learner's goals, dreams and plans for the future"],
+    ['health', '健康・生活習慣', 'health, sleep, diet and daily habits'],
+    ['tech', 'スマホ・テクノロジー', 'smartphones, apps, the internet and technology in daily life'],
+  ]],
+  ['🗾 日本・文化', [
+    ['japan', '日本を紹介する', 'Japan. You are a foreign friend who is curious about Japan; ask the learner to explain Japanese food, places, customs and culture'],
+    ['culture', '文化の違い', 'cultural differences between Japan and other countries'],
+    ['seasons', '季節・行事', 'seasons, holidays and events such as New Year, cherry blossoms and summer festivals'],
+    ['news', '最近のニュース', 'recent everyday news and social topics (keep it light and balanced; avoid partisan politics)'],
+  ]],
+  ['🎭 ロールプレイ', [
+    ['rp_restaurant', 'レストランの店員', 'Role-play: you are a waiter at a restaurant and the learner is the customer. Seat them, take the order, and handle requests'],
+    ['rp_cafe', 'カフェの店員', 'Role-play: you are a barista at a busy cafe and the learner is ordering'],
+    ['rp_shop', '洋服店の店員', 'Role-play: you are a clerk at a clothing store helping the learner find, try on and buy clothes'],
+    ['rp_hotel', 'ホテルのフロント', 'Role-play: you are a hotel front desk clerk; the learner is a guest checking in and asking questions'],
+    ['rp_airport', '空港のチェックイン', 'Role-play: you are an airline check-in agent at the airport; the learner is a passenger'],
+    ['rp_immigration', '入国審査官', 'Role-play: you are an immigration officer asking the learner typical entry questions'],
+    ['rp_doctor', '病院の医師', 'Role-play: you are a doctor; the learner is a patient explaining their symptoms'],
+    ['rp_tourist', '道を聞く観光客', 'Role-play: you are a foreign tourist in Tokyo asking the learner for directions and recommendations; the learner must explain'],
+    ['rp_party', 'パーティーで初対面', 'Role-play: you just met the learner at a friend\'s party; make friendly small talk to get to know them'],
+    ['rp_colleague', '外国人の同僚', 'Role-play: you are the learner\'s new coworker from abroad; chat about work, the office and life in Japan'],
+    ['rp_phone', '電話で予約', 'Role-play: you are a receptionist answering the phone; the learner wants to make a reservation (restaurant, salon or clinic)'],
+    ['rp_landlord', '部屋探し（不動産屋）', 'Role-play: you are a real estate agent helping the learner find an apartment abroad'],
+  ]],
+  ['💼 仕事・試験', [
+    ['work', '仕事の話', "the learner's job and work life"],
+    ['interview', '英語面接', 'a job interview in English (you are the interviewer; ask typical interview questions one at a time)'],
+    ['meeting', '会議・プレゼン練習', 'a business meeting; you are a colleague, ask the learner to explain ideas, give updates and answer questions'],
+    ['debate', 'ディベート（賛成・反対）', 'a friendly debate. Propose a simple debatable question (e.g. city life vs countryside), ask the learner\'s opinion with reasons, then politely give counterarguments'],
+    ['exam', 'スピーキング試験風', 'speaking test practice. Act like an English speaking-test examiner: ask the learner to describe things, compare, and give opinions with reasons, one question at a time'],
+  ]],
+];
+const TOPICS = Object.fromEntries(TOPIC_GROUPS.flatMap(([, list]) => list.map(([k, label, prompt]) => [k, { label, prompt }])));
+
+$('#ai-topic').innerHTML = '<option value="random">🎲 おまかせ（ランダム）</option>'
+  + TOPIC_GROUPS.map(([g, list]) => `<optgroup label="${escapeHtml(g)}">${list.map(([k, label]) =>
+    `<option value="${k}">${escapeHtml(label)}</option>`).join('')}</optgroup>`).join('');
+const savedTopic = store.get('aiTopic', 'free');
+$('#ai-topic').value = (TOPICS[savedTopic] || savedTopic === 'random') ? savedTopic : 'free';
+$('#ai-level').value = store.get('aiLevel', 'intermediate');
 const LEVELS = {
   beginner: 'a beginner (CEFR A1-A2). Use very simple words and short sentences.',
   intermediate: 'an intermediate learner (CEFR B1-B2). Use natural everyday English.',
@@ -622,11 +669,14 @@ const LEVELS = {
 const ai = {
   messages: [],
   busy: false,
+  topic: 'free', // 実際に使っているトピック（おまかせのときは選ばれたもの）
 
   system() {
+    const t = TOPICS[this.topic] || TOPICS.free;
     return `You are a friendly English conversation partner for a Japanese learner who is ${LEVELS[$('#ai-level').value]}
-Topic: ${TOPICS[$('#ai-topic').value]}.
+Topic: ${t.prompt}.
 Keep the conversation going: reply in 1-3 sentences and usually end with a question.
+In a role-play, stay in character for the whole conversation and play your role naturally.
 If the learner writes Japanese, understand it and gently show how to say it in English.
 
 Always answer in exactly this format:
@@ -640,11 +690,19 @@ FEEDBACK: <In Japanese, point out grammar or wording mistakes in the learner's l
     if (settings.apiKey && !this.messages.length && !this.busy) this.reset();
   },
 
+  conv: 0, // 会話の番号。新しい会話にするたびに増やす
+
   reset() {
+    this.conv++;
+    this.busy = false;
     this.messages = [];
     $('#ai-chat').innerHTML = '';
+    const sel = $('#ai-topic').value;
+    const keys = Object.keys(TOPICS);
+    this.topic = sel === 'random' ? keys[Math.floor(Math.random() * keys.length)] : sel;
     if (!settings.apiKey) { this.onOpen(); return; }
-    this.send('(Please start the conversation with a greeting and a first question.)', true);
+    addHtml($('#ai-chat'), 'bubble system', `トピック：<b>${escapeHtml(TOPICS[this.topic].label)}</b>${this.topic.startsWith('rp_') ? '（AIが役を演じます）' : ''}`);
+    this.send('(Please start the conversation. In a role-play, begin in character.)', true);
   },
 
   parse(raw) {
@@ -664,9 +722,11 @@ FEEDBACK: <In Japanese, point out grammar or wording mistakes in the learner's l
     $('#ai-input').value = '';
     this.messages.push({ role: 'user', content: text });
     this.busy = true;
+    const conv = this.conv; // 返事を待つ間に「新しい会話」になったら、この返事は捨てる
     const typing = addHtml(chat, 'bubble ai typing', '<span></span><span></span><span></span>');
     try {
       const raw = await callClaude(this.system(), this.messages);
+      if (conv !== this.conv) return;
       this.messages.push({ role: 'assistant', content: raw });
       typing.remove();
       const p = this.parse(raw);
@@ -677,11 +737,12 @@ FEEDBACK: <In Japanese, point out grammar or wording mistakes in the learner's l
       if (!hidden) stats.add('ai');
       if ($('#ai-autospeak').checked) speak(p.reply, { lang: 'en-US' });
     } catch (e) {
+      if (conv !== this.conv) return;
       typing.remove();
       this.messages.pop();
       addHtml(chat, 'bubble system', '⚠️ ' + escapeHtml(e.message));
     } finally {
-      this.busy = false;
+      if (conv === this.conv) this.busy = false;
     }
   },
 };
@@ -695,8 +756,8 @@ $('#btn-ai-mic').addEventListener('click', async (e) => {
   if (text) ai.send(text);
 });
 $('#btn-ai-reset').addEventListener('click', () => ai.reset());
-$('#ai-topic').addEventListener('change', () => ai.reset());
-$('#ai-level').addEventListener('change', () => ai.reset());
+$('#ai-topic').addEventListener('change', (e) => { store.set('aiTopic', e.target.value); ai.reset(); });
+$('#ai-level').addEventListener('change', (e) => { store.set('aiLevel', e.target.value); ai.reset(); });
 
 // ---------- 発音練習 ----------
 const pron = {
