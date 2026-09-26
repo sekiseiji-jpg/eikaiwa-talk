@@ -452,15 +452,31 @@ const scn = {
   scores: [],
   tries: 0,
 
+  group: 'all',
+
   renderPicker() {
     const best = store.get('scnBest', {});
-    $('#scenario-grid').innerHTML = SCENARIOS.map((s) => `
+    const ORDER = ['旅行・移動', '食事・買い物', '日常・生活', '仕事・学校', '人づきあい', 'トラブル・緊急'];
+    const groups = [...new Set([...ORDER, ...SCENARIOS.map((s) => s.group)])]
+      .filter((g) => SCENARIOS.some((s) => s.group === g));
+    const chip = (key, label) => `<button class="chip ${this.group === key ? 'active' : ''}" data-group="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
+    $('#scenario-groups').innerHTML = chip('all', `すべて（${SCENARIOS.length}）`)
+      + groups.map((g) => chip(g, g)).join('') + chip('todo', 'まだ挑戦していない');
+    const shown = (g) => this.group === 'all' || this.group === 'todo' || this.group === g;
+    const card = (s) => `
       <button class="scn-card" data-id="${s.id}">
         <div class="emoji">${s.emoji}</div>
-        <div class="name">${s.name}</div>
-        <div class="desc">${s.desc}（${s.turns.length}ターン）</div>
+        <div class="name">${escapeHtml(s.name)}</div>
+        <div class="desc">${escapeHtml(s.desc)}（${s.turns.length}ターン）</div>
         ${best[s.id] != null ? `<div class="best">ベスト: ${best[s.id]}点</div>` : ''}
-      </button>`).join('');
+      </button>`;
+    $('#scenario-grid').innerHTML = groups.filter(shown).map((g) => {
+      const list = SCENARIOS.filter((s) => s.group === g && (this.group !== 'todo' || best[s.id] == null));
+      if (!list.length) return '';
+      const done = list.filter((s) => best[s.id] != null).length;
+      return `<h3 class="scn-group">${escapeHtml(g)} <span class="muted">${done}/${list.length}</span></h3>
+        <div class="grid">${list.map(card).join('')}</div>`;
+    }).join('') || '<p class="muted">すべてのシーンに挑戦済みです 🎉</p>';
   },
 
   start(id) {
@@ -555,6 +571,12 @@ const scn = {
 $('#scenario-grid').addEventListener('click', (e) => {
   const card = e.target.closest('.scn-card');
   if (card) scn.start(card.dataset.id);
+});
+$('#scenario-groups').addEventListener('click', (e) => {
+  const c = e.target.closest('[data-group]');
+  if (!c) return;
+  scn.group = c.dataset.group;
+  scn.renderPicker();
 });
 $('#btn-scn-back').addEventListener('click', () => scn.back());
 $('#btn-scn-send').addEventListener('click', () => scn.answer($('#scn-input').value));

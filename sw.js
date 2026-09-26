@@ -1,6 +1,6 @@
 // オフライン対応: アプリのファイルはネット優先で取得し、つながらないときはキャッシュを使う
 // 公開ファイルを更新したら CACHE の番号を上げる
-const CACHE = 'eikaiwa-v3';
+const CACHE = 'eikaiwa-v4';
 const FILES = [
   './',
   'index.html',

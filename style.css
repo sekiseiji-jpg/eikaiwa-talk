@@ -111,6 +111,9 @@ textarea { resize: vertical; font-size: 1.05rem; }
 .list li button { flex-shrink: 0; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.scn-groups { margin: 4px 0; }
+.scn-group { font-size: 1rem; margin: 18px 0 8px; }
+.scn-group .muted { font-size: .8rem; font-weight: 400; }
 .scn-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;
   cursor: pointer; text-align: left; font: inherit; color: var(--text);

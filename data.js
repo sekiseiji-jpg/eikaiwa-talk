@@ -2,7 +2,7 @@
 // turns: 相手(ai)のセリフと、ユーザーが返す模範解答(answers)。hint は日本語の言いたいこと。
 const SCENARIOS = [
   {
-    id: 'intro', emoji: '👋', name: '自己紹介', desc: '初対面の人と話す',
+    id: 'intro', group: '人づきあい', emoji: '👋', name: '自己紹介', desc: '初対面の人と話す',
     turns: [
       { ai: "Hi there! I'm Emma. What's your name?", ja: 'こんにちは！エマです。お名前は？',
         hint: '自分の名前を伝えよう', answers: ["Hi Emma, my name is Ken.", "Nice to meet you, I'm Ken.", "Hello, I'm Ken. Nice to meet you."] },
@@ -17,7 +17,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'restaurant', emoji: '🍽️', name: 'レストラン', desc: '注文・会計をする',
+    id: 'restaurant', group: '食事・買い物', emoji: '🍽️', name: 'レストラン', desc: '注文・会計をする',
     turns: [
       { ai: "Good evening! How many people are in your party?", ja: 'こんばんは！何名様ですか？',
         hint: '2人だと伝えよう', answers: ["Two, please.", "A table for two, please.", "There are two of us."] },
@@ -34,7 +34,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'airport', emoji: '✈️', name: '空港・入国審査', desc: 'チェックインと入国審査',
+    id: 'airport', group: '旅行・移動', emoji: '✈️', name: '空港・入国審査', desc: 'チェックインと入国審査',
     turns: [
       { ai: "May I see your passport, please?", ja: 'パスポートを拝見できますか？',
         hint: 'はい、どうぞと渡そう', answers: ["Here you are.", "Sure, here it is.", "Here is my passport."] },
@@ -49,7 +49,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'hotel', emoji: '🏨', name: 'ホテル', desc: 'チェックインと要望',
+    id: 'hotel', group: '旅行・移動', emoji: '🏨', name: 'ホテル', desc: 'チェックインと要望',
     turns: [
       { ai: "Welcome! How can I help you?", ja: 'いらっしゃいませ！ご用件は？',
         hint: 'チェックインしたいと伝えよう', answers: ["I'd like to check in, please.", "I have a reservation. I'd like to check in.", "Check in, please."] },
@@ -64,7 +64,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'shopping', emoji: '🛍️', name: '買い物', desc: 'サイズや値段を聞く',
+    id: 'shopping', group: '食事・買い物', emoji: '🛍️', name: '買い物', desc: 'サイズや値段を聞く',
     turns: [
       { ai: "Hi! Can I help you find something?", ja: 'こんにちは！何かお探しですか？',
         hint: '見ているだけです、と伝えよう', answers: ["I'm just looking, thanks.", "Just looking, thank you.", "No thanks, I'm just browsing."] },
@@ -79,7 +79,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'directions', emoji: '🗺️', name: '道を尋ねる', desc: '駅や場所への行き方',
+    id: 'directions', group: '旅行・移動', emoji: '🗺️', name: '道を尋ねる', desc: '駅や場所への行き方',
     turns: [
       { ai: "Hi, you look lost. Can I help you?", ja: '迷っているようですね。お手伝いしましょうか？',
         hint: '駅への行き方を聞こう', answers: ["Yes, how do I get to the station?", "Could you tell me the way to the station?", "Excuse me, where is the train station?"] },
@@ -92,7 +92,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'cafe', emoji: '☕', name: 'カフェ', desc: 'コーヒーを注文する',
+    id: 'cafe', group: '食事・買い物', emoji: '☕', name: 'カフェ', desc: 'コーヒーを注文する',
     turns: [
       { ai: "Hi! What can I get for you?", ja: 'こんにちは！ご注文は？',
         hint: 'ラテのMサイズを注文しよう', answers: ["Can I get a medium latte, please?", "I'd like a medium latte, please.", "A medium latte, please."] },
@@ -105,7 +105,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'doctor', emoji: '🏥', name: '病院・薬局', desc: '症状を伝える',
+    id: 'doctor', group: 'トラブル・緊急', emoji: '🏥', name: '病院・薬局', desc: '症状を伝える',
     turns: [
       { ai: "What seems to be the problem today?", ja: '今日はどうされましたか？',
         hint: '頭痛がすると伝えよう', answers: ["I have a headache.", "I've had a bad headache.", "My head hurts."] },
@@ -118,7 +118,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'taxi', emoji: '🚕', name: 'タクシー', desc: '行き先を伝える',
+    id: 'taxi', group: '旅行・移動', emoji: '🚕', name: 'タクシー', desc: '行き先を伝える',
     turns: [
       { ai: "Hi, where to?", ja: 'どちらまで？',
         hint: 'セントラル駅までお願いしよう', answers: ["To Central Station, please.", "Central Station, please.", "Could you take me to Central Station?"] },
@@ -133,7 +133,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'train', emoji: '🚆', name: '駅・電車', desc: '切符を買う・乗り換え',
+    id: 'train', group: '旅行・移動', emoji: '🚆', name: '駅・電車', desc: '切符を買う・乗り換え',
     turns: [
       { ai: "Next, please. How can I help you?", ja: '次の方どうぞ。ご用件は？',
         hint: 'ボストンまでの往復切符を1枚買おう', answers: ["One round-trip ticket to Boston, please.", "I'd like a round-trip ticket to Boston.", "Can I get a return ticket to Boston?"] },
@@ -146,7 +146,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'phone', emoji: '📞', name: '電話で予約', desc: 'レストランを予約する',
+    id: 'phone', group: '食事・買い物', emoji: '📞', name: '電話で予約', desc: 'レストランを予約する',
     turns: [
       { ai: "Hello, Bella Italia. How may I help you?", ja: 'はい、ベラ・イタリアです。ご用件をどうぞ。',
         hint: '予約をしたいと伝えよう', answers: ["Hi, I'd like to make a reservation.", "I'd like to book a table, please.", "Hello, can I make a reservation?"] },
@@ -161,7 +161,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'invite', emoji: '🎉', name: '友達を誘う', desc: '予定を立てる',
+    id: 'invite', group: '人づきあい', emoji: '🎉', name: '友達を誘う', desc: '予定を立てる',
     turns: [
       { ai: "Hey! What are you up to this weekend?", ja: 'やあ！今週末は何するの？',
         hint: '特に予定はないと伝えよう', answers: ["Nothing special. How about you?", "I don't have any plans yet.", "Not much. What about you?"] },
@@ -176,7 +176,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'meeting', emoji: '💼', name: '会議', desc: '仕事で意見を伝える',
+    id: 'meeting', group: '仕事・学校', emoji: '💼', name: '会議', desc: '仕事で意見を伝える',
     turns: [
       { ai: "Thanks for joining. Could you give us an update on the project?", ja: 'ご参加ありがとうございます。プロジェクトの進捗を教えてもらえますか？',
         hint: '予定通り進んでいると伝えよう', answers: ["Sure. The project is on schedule.", "We're on track with the project.", "Everything is going according to plan."] },
@@ -189,7 +189,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'exchange', emoji: '💱', name: '両替・銀行', desc: 'お金を両替する',
+    id: 'exchange', group: '旅行・移動', emoji: '💱', name: '両替・銀行', desc: 'お金を両替する',
     turns: [
       { ai: "Good morning. What can I do for you?", ja: 'おはようございます。ご用件は？',
         hint: '円をドルに両替したい', answers: ["I'd like to exchange yen for dollars.", "Can I change some yen into dollars?", "I want to exchange Japanese yen to US dollars."] },
@@ -204,7 +204,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'lost', emoji: '🆘', name: 'トラブル・落とし物', desc: '困ったときに助けを求める',
+    id: 'lost', group: 'トラブル・緊急', emoji: '🆘', name: 'トラブル・落とし物', desc: '困ったときに助けを求める',
     turns: [
       { ai: "Hello, this is the lost and found. How can I help?", ja: 'こちら遺失物取扱所です。どうしましたか？',
         hint: '財布をなくしたと伝えよう', answers: ["I lost my wallet.", "I think I lost my wallet.", "I can't find my wallet."] },
@@ -217,7 +217,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'homestay', emoji: '🏠', name: 'ホームステイ', desc: 'ホストファミリーと話す',
+    id: 'homestay', group: '人づきあい', emoji: '🏠', name: 'ホームステイ', desc: 'ホストファミリーと話す',
     turns: [
       { ai: "Welcome to our home! How was your flight?", ja: 'ようこそ我が家へ！フライトはどうだった？',
         hint: '長かったけど快適だった', answers: ["It was long, but comfortable.", "It was a long flight, but it was fine.", "Long, but I was able to sleep."] },
@@ -232,7 +232,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'movie', emoji: '🎬', name: '映画館', desc: 'チケットと売店',
+    id: 'movie', group: '日常・生活', emoji: '🎬', name: '映画館', desc: 'チケットと売店',
     turns: [
       { ai: "Hi, which movie would you like to see?", ja: 'こんにちは、どの映画をご覧になりますか？',
         hint: '7時の回を大人2枚', answers: ["Two adults for the seven o'clock show, please.", "Two tickets for the 7 p.m. show, please.", "Two adult tickets for the seven o'clock, please."] },
@@ -245,7 +245,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: 'supermarket', emoji: '🛒', name: 'スーパー', desc: '売り場を探す・レジ',
+    id: 'supermarket', group: '食事・買い物', emoji: '🛒', name: 'スーパー', desc: '売り場を探す・レジ',
     turns: [
       { ai: "Hi there. Can I help you find something?", ja: 'こんにちは。何かお探しですか？',
         hint: '牛乳はどこか聞こう', answers: ["Yes, where can I find the milk?", "Where is the milk?", "Excuse me, which aisle is the milk in?"] },
@@ -255,6 +255,366 @@ const SCENARIOS = [
         hint: 'いりません、エコバッグがある', answers: ["No, thanks. I have my own bag.", "No, I brought my own bag.", "I don't need one, thanks."] },
       { ai: "Your total is twelve fifty. Do you have a membership card?", ja: '合計12ドル50セントです。会員カードはお持ちですか？',
         hint: '持っていません', answers: ["No, I don't.", "No, I don't have one.", "Sorry, I don't have one."] },
+    ],
+  },
+  {
+    id: "hoteltrouble", group: "旅行・移動", emoji: "🛎️", name: "ホテルでトラブル", desc: "部屋の不具合を伝える",
+    turns: [
+      { ai: "Front desk. How can I help you?", ja: "フロントです。どうされましたか？",
+        hint: "部屋のエアコンが動かないと伝えよう", answers: ["The air conditioner in my room isn't working.", "My air conditioner doesn't work.", "The AC in my room is broken."] },
+      { ai: "I'm sorry about that. What's your room number?", ja: "申し訳ございません。お部屋番号は何番ですか？",
+        hint: "部屋番号は512号室だと伝えよう", answers: ["It's room 512.", "I'm in room 512.", "My room number is 512."] },
+      { ai: "I'll send someone up right away. Is there anything else?", ja: "すぐに係の者を向かわせます。ほかに何かございますか？",
+        hint: "隣の部屋がうるさいので部屋を替えてほしいと頼もう", answers: ["The room next door is very noisy. Can I change rooms?", "It's too noisy. Could I move to another room?", "Can I change rooms? It's really noisy."] },
+      { ai: "Of course. We have a quiet room on the 10th floor. Would that be okay?", ja: "かしこまりました。10階に静かなお部屋がございます。そちらでよろしいですか？",
+        hint: "それで大丈夫、ありがとうと伝えよう", answers: ["Yes, that would be great. Thank you.", "That's fine. Thank you so much.", "Sounds good. Thanks a lot."] },
+      { ai: "Great. I'll have your new key ready. Do you need anything else?", ja: "承知しました。新しい鍵をご用意します。ほかに必要なものはございますか？",
+        hint: "タオルを追加でもらえるか聞こう", answers: ["Could I have some extra towels, please?", "Can I get more towels?", "I'd like some extra towels, please."] },
+    ],
+  },
+  {
+    id: "rentacar", group: "旅行・移動", emoji: "🚗", name: "レンタカー", desc: "車を借りる手続き",
+    turns: [
+      { ai: "Hi, welcome to City Car Rental. Do you have a reservation?", ja: "こんにちは、シティ・カーレンタルへようこそ。ご予約はありますか？",
+        hint: "田中ケンの名前で予約していると伝えよう", answers: ["Yes, I have a reservation under Ken Tanaka.", "Yes, it's under the name Ken Tanaka.", "Yes. My name is Ken Tanaka."] },
+      { ai: "Thank you, Mr. Tanaka. Can I see your driver's license, please?", ja: "ありがとうございます、田中様。運転免許証を拝見できますか？",
+        hint: "国際運転免許証を渡そう", answers: ["Sure. Here's my international driver's license.", "Here you are. This is my international license.", "Of course. Here's my international driving permit."] },
+      { ai: "Thanks. Would you like to add full insurance for $15 a day?", ja: "ありがとうございます。1日15ドルのフル保険をお付けしますか？",
+        hint: "はい、フル保険をお願いしたいと伝えよう", answers: ["Yes, I'd like full insurance, please.", "Yes, please add the full insurance.", "Sure, I'll take the full insurance."] },
+      { ai: "Okay. The car comes with a full tank. Do you have any questions?", ja: "わかりました。車は満タンでお渡しします。何かご質問はありますか？",
+        hint: "返すときも満タンにする必要があるか聞こう", answers: ["Do I need to return it with a full tank?", "Should I fill up the tank before returning it?", "Do I have to fill it up when I return it?"] },
+      { ai: "Yes, please. And when will you return the car?", ja: "はい、お願いします。車はいつご返却になりますか？",
+        hint: "金曜日の午後に返すと伝えよう", answers: ["I'll return it on Friday afternoon.", "On Friday afternoon.", "I'm going to bring it back Friday afternoon."] },
+    ],
+  },
+  {
+    id: "touristinfo", group: "旅行・移動", emoji: "ℹ️", name: "観光案内所", desc: "おすすめやツアーを聞く",
+    turns: [
+      { ai: "Hello! Welcome to the visitor center. How can I help you?", ja: "こんにちは！観光案内所へようこそ。どういったご用件ですか？",
+        hint: "おすすめの観光スポットを聞こう", answers: ["Can you recommend some places to visit?", "What are some good places to see here?", "What do you recommend seeing in this city?"] },
+      { ai: "The old town and the harbor are very popular. How long are you staying?", ja: "旧市街と港がとても人気ですよ。どのくらい滞在されますか？",
+        hint: "3日間滞在すると伝えよう", answers: ["I'm staying for three days.", "Three days.", "I'll be here for three days."] },
+      { ai: "Then I'd suggest a city tour. We have a bus tour tomorrow morning. Are you interested?", ja: "それなら市内ツアーがおすすめです。明日の朝にバスツアーがありますよ。ご興味はありますか？",
+        hint: "はい、いくらか聞こう", answers: ["Yes. How much is it?", "Sounds good. How much does it cost?", "Yes, I'm interested. What's the price?"] },
+      { ai: "It's $40 per person, and it takes about three hours. Would you like to book it?", ja: "お一人40ドルで、約3時間です。ご予約されますか？",
+        hint: "はい、1人分予約したいと伝えよう", answers: ["Yes, I'd like to book one ticket.", "Yes, one person, please.", "Sure, please book it for one person."] },
+      { ai: "Done! The bus leaves from here at 9 a.m. Anything else?", ja: "ご予約完了です！バスは朝9時にここから出発します。ほかに何かございますか？",
+        hint: "無料の地図をもらえるか聞こう", answers: ["Can I have a free map, please?", "Do you have a free city map?", "Could I get a map of the city?"] },
+    ],
+  },
+  {
+    id: "flight", group: "旅行・移動", emoji: "🛫", name: "飛行機の機内", desc: "機内サービスとお願い",
+    turns: [
+      { ai: "Would you like something to drink?", ja: "お飲み物はいかがですか？",
+        hint: "オレンジジュースをお願いしよう", answers: ["Orange juice, please.", "Can I have some orange juice?", "I'd like orange juice, please."] },
+      { ai: "Here you go. For dinner, we have chicken or fish. Which would you like?", ja: "どうぞ。お食事はチキンと魚がございます。どちらになさいますか？",
+        hint: "チキンをお願いしよう", answers: ["Chicken, please.", "I'll have the chicken.", "I'd like the chicken, please."] },
+      { ai: "Sure. Is there anything else I can get for you?", ja: "かしこまりました。ほかに何かお持ちしましょうか？",
+        hint: "少し寒いので毛布がほしいと伝えよう", answers: ["I'm a little cold. Could I have a blanket?", "Can I get a blanket, please?", "Could you bring me a blanket? I'm cold."] },
+      { ai: "Of course. I'll bring one right away. Anything else?", ja: "もちろんです。すぐにお持ちします。ほかにございますか？",
+        hint: "空いている席に移れるか聞こう", answers: ["Can I move to an empty seat?", "Is it okay if I change seats?", "Could I move to another seat?"] },
+      { ai: "Yes, there's an empty seat in row 30. Also, do you need a customs form?", ja: "はい、30列目に空席がございます。それと、税関申告書は必要ですか？",
+        hint: "はい、1枚ほしいと伝えよう", answers: ["Yes, I need one, please.", "Yes, please. Can I have one?", "Yes, one customs form, please."] },
+    ],
+  },
+  {
+    id: "delay", group: "旅行・移動", emoji: "⏰", name: "フライトの遅延", desc: "乗り継ぎと振替便の相談",
+    turns: [
+      { ai: "Hello. How can I help you?", ja: "こんにちは。どうなさいましたか？",
+        hint: "自分の便が遅れているのか聞こう", answers: ["Is my flight delayed?", "I heard my flight is delayed. Is that right?", "Is flight 207 delayed?"] },
+      { ai: "Yes, I'm afraid it's delayed by three hours. Do you have a connecting flight?", ja: "申し訳ございませんが、3時間遅れております。乗り継ぎ便はございますか？",
+        hint: "はい、乗り継ぎに間に合わないと伝えよう", answers: ["Yes, I'm going to miss my connecting flight.", "Yes. I'll miss my connection.", "Yes, and I won't make my connecting flight."] },
+      { ai: "I see. I can put you on a later flight. Is that okay?", ja: "わかりました。後の便にお振替できます。よろしいですか？",
+        hint: "次の便は何時か聞こう", answers: ["What time is the next flight?", "When does the next flight leave?", "What time does the next one depart?"] },
+      { ai: "The next flight leaves at 8 p.m. I can book you a seat on it. Would you like that?", ja: "次の便は午後8時発です。そちらにお席をお取りできます。いかがですか？",
+        hint: "はい、それでお願いしますと伝えよう", answers: ["Yes, please book me on that flight.", "Yes, that's fine. Please book it.", "Okay, I'll take that flight."] },
+      { ai: "All done. Here's your new boarding pass. Is there anything else?", ja: "手続き完了です。こちらが新しい搭乗券です。ほかに何かございますか？",
+        hint: "食事券はもらえるか聞こう", answers: ["Can I get a meal voucher?", "Do you offer meal vouchers?", "Could I have a meal voucher, please?"] },
+    ],
+  },
+  {
+    id: "fastfood", group: "食事・買い物", emoji: "🍔", name: "ファストフード", desc: "セットを注文する",
+    turns: [
+      { ai: "Hi! What can I get for you?", ja: "いらっしゃいませ！ご注文は何になさいますか？",
+        hint: "チーズバーガーのセットを頼もう", answers: ["Can I get a cheeseburger meal?", "I'd like a cheeseburger combo, please.", "A cheeseburger meal, please."] },
+      { ai: "Sure. What size would you like, regular or large?", ja: "かしこまりました。サイズはレギュラーとラージどちらにしますか？",
+        hint: "ラージにしよう", answers: ["Large, please.", "I'll have a large.", "Make it large, please."] },
+      { ai: "And what would you like to drink?", ja: "お飲み物は何になさいますか？",
+        hint: "コーラをお願いしよう", answers: ["A Coke, please.", "I'll have a Coke.", "Can I get a Coke?"] },
+      { ai: "Is that for here or to go?", ja: "こちらでお召し上がりですか、お持ち帰りですか？",
+        hint: "店内で食べると伝えよう", answers: ["For here, please.", "I'll eat here.", "It's for here."] },
+      { ai: "Okay, that's $9.50. Would you like any sauce?", ja: "はい、9ドル50セントです。ソースはおつけしますか？",
+        hint: "ケチャップをもらえるか聞こう", answers: ["Can I have some ketchup, please?", "Ketchup, please.", "Could I get some ketchup?"] },
+    ],
+  },
+  {
+    id: "bar", group: "食事・買い物", emoji: "🍺", name: "バー・パブ", desc: "飲み物を頼んで雑談する",
+    turns: [
+      { ai: "Hey there! What can I get you?", ja: "いらっしゃい！何にしますか？",
+        hint: "おすすめのビールを聞こう", answers: ["What beer do you recommend?", "Which beer would you recommend?", "What's a good beer here?"] },
+      { ai: "Our local IPA is really popular. Do you want to try it?", ja: "地元のIPAがすごく人気ですよ。試してみますか？",
+        hint: "はい、1パイントくださいと言おう", answers: ["Sure, I'll have a pint, please.", "Yes, a pint of that, please.", "Okay, I'll try a pint."] },
+      { ai: "Here you go. You're not from around here, are you?", ja: "どうぞ。この辺の方じゃないですよね？",
+        hint: "日本から来たと伝えよう", answers: ["No, I'm from Japan.", "No, I'm visiting from Japan.", "That's right. I'm from Japan."] },
+      { ai: "Oh, nice! Are you here on vacation or for work?", ja: "へえ、いいですね！休暇で来たんですか、それとも仕事ですか？",
+        hint: "休暇で来ていると伝えよう", answers: ["I'm here on vacation.", "I'm on vacation.", "Just on vacation."] },
+      { ai: "Great. So how do you like the beer?", ja: "いいですね。ビールの味はどうですか？",
+        hint: "とてもおいしい、もう1杯ほしいと言おう", answers: ["It's really good. Can I have another one?", "It's delicious. One more, please.", "I love it. I'll have another."] },
+    ],
+  },
+  {
+    id: "return", group: "食事・買い物", emoji: "🔄", name: "返品・交換", desc: "レシートを見せて交換する",
+    turns: [
+      { ai: "Hi, how can I help you today?", ja: "こんにちは、本日はどうされましたか？",
+        hint: "このシャツを交換したいと伝えよう", answers: ["I'd like to exchange this shirt.", "Can I exchange this shirt?", "I want to exchange this shirt, please."] },
+      { ai: "Sure. What's the problem with it?", ja: "かしこまりました。どのような問題がありましたか？",
+        hint: "サイズが小さすぎると伝えよう", answers: ["It's too small for me.", "The size is too small.", "It doesn't fit. It's too small."] },
+      { ai: "I see. Do you have the receipt?", ja: "わかりました。レシートはお持ちですか？",
+        hint: "はい、どうぞとレシートを渡そう", answers: ["Yes, here's the receipt.", "Yes, here it is.", "Sure, here you are."] },
+      { ai: "Thank you. What size would you like instead?", ja: "ありがとうございます。代わりにどのサイズになさいますか？",
+        hint: "Lサイズがほしいと伝えよう", answers: ["A large, please.", "I'd like a large.", "Can I get it in large?"] },
+      { ai: "Here's a large. Would you like to try it on first?", ja: "こちらがLサイズです。先にご試着されますか？",
+        hint: "はい、試着室はどこか聞こう", answers: ["Yes. Where's the fitting room?", "Sure. Where can I try it on?", "Yes, please. Where is the fitting room?"] },
+    ],
+  },
+  {
+    id: "salon", group: "食事・買い物", emoji: "💇", name: "美容院", desc: "髪型を伝える",
+    turns: [
+      { ai: "Hi! What are we doing today?", ja: "こんにちは！今日はどうしますか？",
+        hint: "カットをお願いしたいと伝えよう", answers: ["I'd like a haircut, please.", "Just a haircut, please.", "Can I get a haircut?"] },
+      { ai: "Sure. How short would you like it?", ja: "かしこまりました。どのくらい短くしますか？",
+        hint: "少しだけ短く、2〜3センチ切ってほしいと伝えよう", answers: ["Just a little shorter, please.", "Could you cut about two or three centimeters?", "Just a trim, maybe an inch."] },
+      { ai: "Got it. What about the sides and the back?", ja: "わかりました。横と後ろはどうしますか？",
+        hint: "横と後ろは短めにしてほしいと伝えよう", answers: ["Short on the sides and back, please.", "Please keep the sides and back short.", "Can you make the sides and back shorter?"] },
+      { ai: "No problem. Would you like a shampoo as well?", ja: "承知しました。シャンプーもしますか？",
+        hint: "はい、シャンプーもお願いしますと答えよう", answers: ["Yes, a shampoo would be nice.", "Yes, please. I'd like a shampoo too.", "Sure, shampoo too, please."] },
+      { ai: "All done! How does it look?", ja: "できました！いかがですか？",
+        hint: "とても気に入った、ありがとうと伝えよう", answers: ["It looks great. Thank you!", "I really like it, thanks!", "Perfect, I love it. Thank you."] },
+    ],
+  },
+  {
+    id: "pharmacy", group: "食事・買い物", emoji: "💊", name: "薬局で薬を買う", desc: "症状を伝えて薬を選ぶ",
+    turns: [
+      { ai: "Hi there. How can I help you?", ja: "こんにちは。どうされましたか？",
+        hint: "風邪薬を探していると伝えよう", answers: ["I'm looking for some cold medicine.", "Do you have anything for a cold?", "I need some medicine for a cold."] },
+      { ai: "Sure. What symptoms do you have?", ja: "わかりました。どんな症状がありますか？",
+        hint: "喉が痛くて咳が出ると伝えよう", answers: ["I have a sore throat and a cough.", "My throat hurts and I'm coughing.", "I've got a sore throat and a bad cough."] },
+      { ai: "I see. Do you have a fever too?", ja: "なるほど。熱もありますか？",
+        hint: "少し熱があると伝えよう", answers: ["Yes, I have a slight fever.", "Yes, I have a little fever.", "A little, I think I have a low fever."] },
+      { ai: "Then I'd recommend this one. Are you taking any other medication?", ja: "それならこちらがおすすめです。他に飲んでいる薬はありますか？",
+        hint: "他の薬は飲んでいないと答えよう", answers: ["No, I'm not taking any other medicine.", "No, nothing else.", "No, I'm not on any medication."] },
+      { ai: "Great. Take two tablets after meals. Anything else?", ja: "わかりました。食後に2錠飲んでください。他に何かありますか？",
+        hint: "これで大丈夫、ありがとうと伝えよう", answers: ["No, that's all. Thank you.", "That's everything, thanks.", "No, I'm good. Thanks for your help."] },
+    ],
+  },
+  {
+    id: "postoffice", group: "日常・生活", emoji: "📮", name: "郵便局", desc: "荷物を日本に送る",
+    turns: [
+      { ai: "Next, please. What can I do for you?", ja: "次の方どうぞ。ご用件は何ですか？",
+        hint: "この荷物を日本に送りたいと伝えよう", answers: ["I'd like to send this package to Japan.", "I want to mail this to Japan, please.", "Can I send this box to Japan?"] },
+      { ai: "Sure. What's inside the package?", ja: "かしこまりました。中身は何ですか？",
+        hint: "服と本が入っていると答えよう", answers: ["Some clothes and books.", "It's clothes and a few books.", "There are clothes and books inside."] },
+      { ai: "Okay. Would you like to send it by air or by sea?", ja: "わかりました。航空便と船便、どちらにしますか？",
+        hint: "どれくらい時間がかかるか聞こう", answers: ["How long does each one take?", "How long will it take by air?", "How many days does it take?"] },
+      { ai: "Air takes about a week and costs $45. Sea takes six to eight weeks and costs $20. Which one?", ja: "航空便は約1週間で45ドル、船便は6〜8週間で20ドルです。どちらにしますか？",
+        hint: "航空便でお願いしますと答えよう", answers: ["By air, please.", "I'll send it by air.", "Air mail, please. I need it soon."] },
+      { ai: "Great. Would you like to add insurance or tracking?", ja: "わかりました。保険や追跡サービスをつけますか？",
+        hint: "追跡をつけてほしいと伝えよう", answers: ["Yes, I'd like tracking, please.", "Tracking would be good, please.", "Can you add tracking, please?"] },
+    ],
+  },
+  {
+    id: "gym", group: "日常・生活", emoji: "🏋️", name: "ジムに入会", desc: "料金やプランを聞く",
+    turns: [
+      { ai: "Welcome! Are you interested in joining our gym?", ja: "いらっしゃいませ！ジムへの入会をお考えですか？",
+        hint: "はい、会員について知りたいと伝えよう", answers: ["Yes, I'd like to know about memberships.", "Yes, can you tell me about your plans?", "Yes, I'm thinking about joining."] },
+      { ai: "Great! We have a monthly plan for $50 and a yearly plan for $480. Which sounds better?", ja: "ありがとうございます！月額50ドルのプランと年額480ドルのプランがあります。どちらがよさそうですか？",
+        hint: "まずは月額プランにしたいと伝えよう", answers: ["I'll start with the monthly plan.", "The monthly plan sounds good.", "I'd like the monthly plan, please."] },
+      { ai: "Sounds good. Do you have any questions about the gym?", ja: "わかりました。ジムについて何か質問はありますか？",
+        hint: "営業時間を聞こう", answers: ["What are your opening hours?", "What time are you open?", "When is the gym open?"] },
+      { ai: "We're open from 6 a.m. to 11 p.m. every day. Anything else?", ja: "毎日朝6時から夜11時まで営業しています。他にありますか？",
+        hint: "無料体験はできるか聞こう", answers: ["Can I try it for free first?", "Do you have a free trial?", "Is there a free trial day?"] },
+      { ai: "Yes, you can try it free today. Can I see some ID, please?", ja: "はい、今日無料で体験できます。身分証を見せていただけますか？",
+        hint: "はい、どうぞとパスポートを渡そう", answers: ["Sure, here's my passport.", "Of course. Here you go.", "Yes, here is my ID."] },
+    ],
+  },
+  {
+    id: "apartment", group: "日常・生活", emoji: "🔑", name: "部屋探し", desc: "不動産屋で希望を伝える",
+    turns: [
+      { ai: "Hello! What kind of place are you looking for?", ja: "こんにちは！どんな物件をお探しですか？",
+        hint: "1ベッドルームのアパートを探していると伝えよう", answers: ["I'm looking for a one-bedroom apartment.", "I need a one-bedroom apartment.", "A one-bedroom place, please."] },
+      { ai: "Okay. What's your budget?", ja: "わかりました。予算はいくらですか？",
+        hint: "月1500ドルくらいまでと伝えよう", answers: ["Around $1,500 a month.", "Up to about $1,500 per month.", "My budget is $1,500 a month."] },
+      { ai: "Got it. Is there any area you prefer?", ja: "承知しました。希望のエリアはありますか？",
+        hint: "駅の近くがいいと伝えよう", answers: ["Somewhere near a train station.", "I'd like to live near the station.", "Close to a station, if possible."] },
+      { ai: "I have a nice place a five-minute walk from the station. Anything else you need?", ja: "駅から徒歩5分のいい物件があります。他に希望はありますか？",
+        hint: "洗濯機があるか聞こう", answers: ["Does it have a washing machine?", "Is there a washer in the apartment?", "Does it come with a washing machine?"] },
+      { ai: "Yes, it has a washer and dryer. Would you like to see it?", ja: "はい、洗濯機と乾燥機があります。見学しますか？",
+        hint: "はい、見学したいと伝えよう", answers: ["Yes, I'd love to see it.", "Sure, can I see it today?", "Yes, please. I'd like to take a look."] },
+    ],
+  },
+  {
+    id: "interview", group: "仕事・学校", emoji: "👔", name: "就職面接", desc: "自己PRと志望動機",
+    turns: [
+      { ai: "Thanks for coming in today. Could you introduce yourself?", ja: "本日はお越しいただきありがとうございます。自己紹介をお願いできますか？",
+        hint: "東京出身のソフトウェアエンジニア、ケン・タナカだと自己紹介しよう", answers: ["I'm Ken Tanaka, a software engineer from Tokyo.", "My name is Ken Tanaka. I'm a software engineer from Tokyo.", "Hi, I'm Ken Tanaka, a software engineer in Tokyo."] },
+      { ai: "Nice to meet you, Ken. How long have you been working as an engineer?", ja: "はじめまして、ケンさん。エンジニアとしてどれくらい働いていますか？",
+        hint: "5年間働いていると答えよう", answers: ["I've been working as an engineer for five years.", "For about five years.", "I have five years of experience."] },
+      { ai: "Great. What are your strengths?", ja: "いいですね。あなたの強みは何ですか？",
+        hint: "チームでうまく働けること、問題解決が得意なことを伝えよう", answers: ["I work well in a team and I'm good at solving problems.", "I'm a good team player and problem solver.", "I'm good at teamwork and solving problems."] },
+      { ai: "Why do you want to work for our company?", ja: "なぜ当社で働きたいのですか？",
+        hint: "御社の製品が好きで、成長したいと伝えよう", answers: ["I love your products and I want to grow here.", "I really like your products and want to grow with you.", "I'm a fan of your products and want to grow as an engineer."] },
+      { ai: "Thank you. Do you have any questions for us?", ja: "ありがとうございます。何か質問はありますか？",
+        hint: "チームについて教えてほしいと聞こう", answers: ["Could you tell me about the team?", "What is the team like?", "Can you tell me more about the team I'd join?"] },
+    ],
+  },
+  {
+    id: "coworker", group: "仕事・学校", emoji: "☕", name: "同僚と雑談", desc: "週末の話や仕事の話",
+    turns: [
+      { ai: "Morning, Ken! How was your weekend?", ja: "おはよう、ケン！週末はどうだった？",
+        hint: "よかった、ハイキングに行ったと答えよう", answers: ["It was great. I went hiking.", "Pretty good! I went hiking on Saturday.", "Good, thanks. I went for a hike."] },
+      { ai: "Nice! Where did you go?", ja: "いいね！どこに行ったの？",
+        hint: "友達と近くの山に行ったと答えよう", answers: ["I went to a mountain nearby with friends.", "A mountain near the city, with some friends.", "I hiked a nearby mountain with my friends."] },
+      { ai: "Sounds fun. How about work? Are you busy this week?", ja: "楽しそう。仕事はどう？今週は忙しい？",
+        hint: "はい、金曜が締め切りで忙しいと答えよう", answers: ["Yeah, I'm busy. I have a deadline on Friday.", "Pretty busy. My deadline is Friday.", "Yes, I've got a deadline this Friday."] },
+      { ai: "Good luck with that! Do you want to grab lunch together today?", ja: "頑張ってね！今日一緒にランチ行かない？",
+        hint: "いいね、行こうと答えよう", answers: ["Sure, I'd love to.", "Sounds good! Let's go.", "Yes, let's have lunch together."] },
+      { ai: "Great. How about noon at the cafe downstairs?", ja: "よかった。12時に下のカフェでどう？",
+        hint: "12時でOK、そこで会おうと答えよう", answers: ["Noon works for me. See you there.", "Perfect, see you at noon.", "Sounds good. I'll meet you there at twelve."] },
+    ],
+  },
+  {
+    id: "onlinemeeting", group: "仕事・学校", emoji: "💻", name: "オンライン会議", desc: "音声トラブルと進行",
+    turns: [
+      { ai: "Hi Ken, can you hear me okay?", ja: "ケン、こんにちは。声は聞こえてる？",
+        hint: "はい、よく聞こえますと答えよう", answers: ["Yes, I can hear you fine.", "Yes, loud and clear.", "Yes, I can hear you well."] },
+      { ai: "Great. Hmm, I can't hear you very well. Your voice is breaking up.", ja: "よかった。うーん、あなたの声がよく聞こえないな。途切れているよ。",
+        hint: "ごめんなさい、今は聞こえますか？と聞こう", answers: ["Sorry about that. Can you hear me now?", "Sorry, is this better?", "Sorry. How about now? Can you hear me?"] },
+      { ai: "Yes, much better now. Could you share your screen?", ja: "うん、だいぶよくなった。画面を共有してもらえる？",
+        hint: "はい、今共有しますと答えよう", answers: ["Sure, I'll share my screen now.", "Okay, sharing my screen now.", "Of course. Just a moment."] },
+      { ai: "Thanks. Can everyone see the slides?", ja: "ありがとう。みんなスライドは見えてる？",
+        hint: "はい、見えますと答えよう", answers: ["Yes, I can see them.", "Yes, the slides look fine.", "Yes, I can see your slides."] },
+      { ai: "Okay, that's all for today. Does anyone have any questions?", ja: "では、今日はここまで。何か質問はありますか？",
+        hint: "質問はない、ありがとうと伝えよう", answers: ["No questions. Thank you!", "No, I'm good. Thanks, everyone.", "Nothing from me. Thanks for the meeting."] },
+    ],
+  },
+  {
+    id: "smalltalk", group: "人づきあい", emoji: "🌤️", name: "世間話", desc: "天気や週末の話をする",
+    turns: [
+      { ai: "Beautiful day today, isn't it?", ja: "今日はいい天気ですね。",
+        hint: "本当に、と同意しよう", answers: ["Yes, it's really nice today.", "It sure is. I love this weather.", "Yeah, it's a beautiful day."] },
+      { ai: "Perfect weather for the weekend. Do you have any plans?", ja: "週末にぴったりの天気ですね。何か予定はありますか？",
+        hint: "友達と公園でピクニックをする予定だと言おう", answers: ["I'm going to have a picnic in the park with friends.", "Yes, I'll go on a picnic with my friends.", "I'm planning a picnic in the park with some friends."] },
+      { ai: "Oh, that sounds lovely! Which park are you going to?", ja: "わあ、素敵ですね！どこの公園に行くんですか？",
+        hint: "駅の近くの大きな公園だと答えよう", answers: ["The big park near the station.", "We're going to the big park by the station.", "It's the large park near the station."] },
+      { ai: "I know that one. The flowers there are amazing right now. How about you, what did you do last weekend?", ja: "知ってます。今あそこの花がすごくきれいなんですよ。ところで先週末は何をしましたか？",
+        hint: "家でゆっくりして映画を見たと言おう", answers: ["I just relaxed at home and watched a movie.", "I stayed home and watched some movies.", "Nothing much. I relaxed and watched a movie at home."] },
+      { ai: "Sounds nice and relaxing. Well, I should get going. Enjoy your picnic!", ja: "のんびりできてよさそうですね。さて、そろそろ行かないと。ピクニック楽しんでね！",
+        hint: "ありがとう、あなたもよい週末を、と返そう", answers: ["Thanks! Have a great weekend too.", "Thank you. You have a nice weekend!", "Thanks, you too. Enjoy your weekend!"] },
+    ],
+  },
+  {
+    id: "birthday", group: "人づきあい", emoji: "🎂", name: "誕生日パーティー", desc: "プレゼントを渡してお祝いする",
+    turns: [
+      { ai: "Hey, Ken! Thanks for coming to my party!", ja: "やあ、ケン！パーティーに来てくれてありがとう！",
+        hint: "誕生日おめでとう、と言おう", answers: ["Happy birthday! Thanks for inviting me.", "Happy birthday! I'm glad to be here.", "Happy birthday to you!"] },
+      { ai: "Thank you so much! Oh, what's that you've got there?", ja: "本当にありがとう！あれ、持ってるそれは何？",
+        hint: "ちょっとしたプレゼントだよ、と渡そう", answers: ["This is a little gift for you.", "It's a small present for you.", "Here, I got you a little something."] },
+      { ai: "You didn't have to! Can I open it now?", ja: "気を遣わなくてよかったのに！今開けてもいい？",
+        hint: "もちろん、気に入るといいな、と言おう", answers: ["Of course! I hope you like it.", "Sure, go ahead. I hope you like it.", "Yes, please! I hope you'll like it."] },
+      { ai: "Wow, a scarf! It's my favorite color. How did you know?", ja: "わあ、マフラーだ！好きな色だよ。どうしてわかったの？",
+        hint: "いつも青い服を着ているからと答えよう", answers: ["You always wear blue clothes.", "Because you often wear blue.", "I noticed you always wear blue."] },
+      { ai: "Ha, you got me! Come on in and grab some cake. Would you like something to drink?", ja: "ははっ、その通り！さあ入ってケーキを食べて。何か飲み物はいる？",
+        hint: "オレンジジュースをお願いしよう", answers: ["Orange juice, please.", "Can I have some orange juice?", "I'd like an orange juice, please."] },
+    ],
+  },
+  {
+    id: "visit", group: "人づきあい", emoji: "🏡", name: "友達の家に招かれる", desc: "お邪魔します〜お礼まで",
+    turns: [
+      { ai: "Hi, Ken! Come on in. Did you find the place okay?", ja: "やあ、ケン！入って入って。場所はすぐわかった？",
+        hint: "うん、簡単に見つかったと答えよう", answers: ["Yes, it was easy to find.", "Yeah, I found it easily.", "No problem, it was easy to find."] },
+      { ai: "Great. Oh, should I take your coat?", ja: "よかった。あ、コートを預かろうか？",
+        hint: "ありがとう、とお願いして手土産を渡そう", answers: ["Thanks. Oh, and this is for you.", "Yes, thank you. I brought you some cookies.", "Thank you. Here's a little something for you."] },
+      { ai: "Oh, how nice of you! Make yourself at home. Can I get you anything?", ja: "わあ、ありがとう！くつろいでね。何か持ってこようか？",
+        hint: "お茶をもらえるか聞こう", answers: ["Could I have some tea, please?", "Some tea would be nice, thanks.", "I'd love a cup of tea."] },
+      { ai: "Sure. Dinner will be ready soon. Do you have any food you can't eat?", ja: "いいよ。夕食もすぐできるよ。食べられないものはある？",
+        hint: "何でも食べられると答えよう", answers: ["No, I can eat anything.", "Nothing, I eat everything.", "No, I'm fine with anything."] },
+      { ai: "Perfect. So, how did you like dinner?", ja: "よかった。それで、夕食はどうだった？",
+        hint: "とてもおいしかった、招いてくれてありがとうと言おう", answers: ["It was delicious! Thank you for inviting me.", "Everything was great. Thanks for having me.", "It was really good. Thanks so much for inviting me."] },
+    ],
+  },
+  {
+    id: "neighbor", group: "人づきあい", emoji: "👋", name: "近所の人", desc: "引っ越しのあいさつ",
+    turns: [
+      { ai: "Hello! I haven't seen you before. Are you new here?", ja: "こんにちは！初めてお見かけしますね。越してきたばかりですか？",
+        hint: "隣に引っ越してきたケン・タナカだと自己紹介しよう", answers: ["Yes, I just moved in next door. I'm Ken Tanaka.", "Hi, I'm Ken Tanaka. I just moved in next door.", "Yes, I'm your new neighbor, Ken Tanaka."] },
+      { ai: "Nice to meet you, Ken! I'm Linda. Where did you move from?", ja: "はじめまして、ケン！私はリンダです。どこから引っ越してきたんですか？",
+        hint: "日本の大阪から来たと答えよう", answers: ["I moved here from Osaka, Japan.", "I'm from Osaka in Japan.", "I came from Osaka, Japan."] },
+      { ai: "Oh, wow! Welcome to the neighborhood. How are you settling in?", ja: "へえ、すごい！この地域へようこそ。新しい生活には慣れてきましたか？",
+        hint: "まだ荷ほどき中だけど気に入っていると言おう", answers: ["I'm still unpacking, but I like it here.", "Still unpacking, but I really like it.", "I'm still unpacking boxes, but I love it here."] },
+      { ai: "That's good to hear. If you need anything, just let me know. Is there anything you'd like to know about the area?", ja: "それはよかった。何か必要なら言ってくださいね。この辺りについて何か知りたいことはありますか？",
+        hint: "近くにいいスーパーはあるか聞こう", answers: ["Is there a good supermarket nearby?", "Do you know a good grocery store near here?", "Where's a good supermarket around here?"] },
+      { ai: "There's a great one just two blocks down on Main Street. Anyway, it was nice meeting you!", ja: "メインストリートを2ブロック行ったところにいいお店がありますよ。とにかく、お会いできてよかったです！",
+        hint: "教えてくれたお礼と、これからよろしくを伝えよう", answers: ["Thank you! Nice meeting you too.", "Thanks for the tip. I look forward to being neighbors.", "Thanks so much. It was nice to meet you too!"] },
+    ],
+  },
+  {
+    id: "decline", group: "人づきあい", emoji: "🙏", name: "誘いを断る", desc: "丁寧に断って別の日を提案する",
+    turns: [
+      { ai: "Hey, Ken! A few of us are going out for dinner on Friday. Do you want to join us?", ja: "ねえ、ケン！金曜日に何人かで夕食に行くんだけど、一緒に来ない？",
+        hint: "誘ってくれてありがとう、でも行けないと断ろう", answers: ["Thanks for asking, but I can't make it.", "I'd love to, but I can't this Friday.", "Sorry, I'm afraid I can't go on Friday."] },
+      { ai: "Oh, that's too bad. Are you busy that day?", ja: "えー、残念。その日は忙しいの？",
+        hint: "仕事で遅くまで残業があると理由を言おう", answers: ["Yes, I have to work late that day.", "I have to work overtime on Friday.", "Yeah, I'm working late on Friday."] },
+      { ai: "I see. Work can be tough. Maybe next time, then?", ja: "なるほど。仕事は大変だよね。じゃあまた今度？",
+        hint: "来週の土曜日はどうかと提案しよう", answers: ["How about next Saturday?", "Are you free next Saturday?", "Could we do it next Saturday instead?"] },
+      { ai: "Next Saturday works for me! I'll ask the others too. What time is good for you?", ja: "来週の土曜日なら大丈夫！他のみんなにも聞いてみるね。何時がいい？",
+        hint: "夜7時ごろがいいと答えよう", answers: ["Around 7 p.m. would be great.", "How about seven o'clock?", "Seven in the evening is good for me."] },
+      { ai: "Great, 7 it is. I'll let everyone know!", ja: "いいね、7時で決まり。みんなに伝えておくね！",
+        hint: "ありがとう、楽しみにしてると伝えよう", answers: ["Thanks! I'm looking forward to it.", "Thank you. I can't wait!", "Great, thanks. See you then!"] },
+    ],
+  },
+  {
+    id: "police", group: "トラブル・緊急", emoji: "🚓", name: "警察に届ける", desc: "盗難の被害を説明する",
+    turns: [
+      { ai: "Hello, how can I help you?", ja: "こんにちは、どうされましたか？",
+        hint: "財布を盗まれたと伝えよう", answers: ["My wallet was stolen.", "Someone stole my wallet.", "I'd like to report a stolen wallet."] },
+      { ai: "I'm sorry to hear that. When and where did it happen?", ja: "それはお気の毒に。いつ、どこで起きましたか？",
+        hint: "1時間ほど前に駅の近くのカフェでと答えよう", answers: ["About an hour ago at a cafe near the station.", "An hour ago, in a cafe by the station.", "It happened at a cafe near the station an hour ago."] },
+      { ai: "Can you describe the wallet?", ja: "財布の特徴を教えてもらえますか？",
+        hint: "黒い革の財布だと説明しよう", answers: ["It's a black leather wallet.", "It's black and made of leather.", "A black leather wallet."] },
+      { ai: "What was inside it?", ja: "中には何が入っていましたか？",
+        hint: "現金100ドルとクレジットカードが入っていたと言おう", answers: ["About 100 dollars and my credit card.", "There was 100 dollars in cash and a credit card.", "It had 100 dollars and my credit cards."] },
+      { ai: "Okay. Please fill out this form with your name and phone number. Do you have any questions?", ja: "わかりました。この用紙に名前と電話番号を記入してください。何か質問はありますか？",
+        hint: "盗難証明書をもらえるか聞こう", answers: ["Can I get a copy of the police report?", "Could I have a police report for my insurance?", "Can you give me a theft report?"] },
+    ],
+  },
+  {
+    id: "phonebroken", group: "トラブル・緊急", emoji: "📱", name: "スマホの修理", desc: "壊れた状況を説明する",
+    turns: [
+      { ai: "Hi there. What can I do for you today?", ja: "こんにちは。今日はどうされましたか？",
+        hint: "スマホを修理してほしいと伝えよう", answers: ["I'd like to get my phone repaired.", "My phone is broken. Can you fix it?", "I need to get my smartphone fixed."] },
+      { ai: "Sure. What seems to be the problem?", ja: "かしこまりました。どんな不具合ですか？",
+        hint: "画面が割れてタッチが効かないと説明しよう", answers: ["The screen is cracked and the touch doesn't work.", "The screen broke, and it doesn't respond to touch.", "My screen is cracked and touch isn't working."] },
+      { ai: "I see. How did it happen?", ja: "なるほど。どうしてそうなったんですか？",
+        hint: "昨日地面に落としてしまったと答えよう", answers: ["I dropped it on the ground yesterday.", "I dropped it yesterday.", "It fell on the ground yesterday."] },
+      { ai: "We can replace the screen. It'll cost 150 dollars. Is that okay?", ja: "画面の交換ができます。150ドルかかりますが、よろしいですか？",
+        hint: "はい、どのくらい時間がかかるか聞こう", answers: ["Yes, that's fine. How long will it take?", "Okay. How long does it take?", "Sure. When will it be ready?"] },
+      { ai: "About two hours. Could you leave your phone with us?", ja: "2時間ほどです。スマホをお預かりしてもいいですか？",
+        hint: "はい、2時間後に取りに来ますと言おう", answers: ["Sure. I'll come back in two hours.", "Okay, I'll pick it up in two hours.", "Yes. I'll be back in two hours."] },
+    ],
+  },
+  {
+    id: "sickday", group: "トラブル・緊急", emoji: "🤒", name: "体調不良の連絡", desc: "上司に休むと伝える",
+    turns: [
+      { ai: "Good morning, this is Sarah. Oh, hi Ken. What's up?", ja: "おはようございます、サラです。あら、ケン。どうしたの？",
+        hint: "体調が悪いので今日は休みたいと伝えよう", answers: ["I'm not feeling well. Can I take the day off?", "I'm sick, so I need to take today off.", "Sorry, I feel sick and can't come in today."] },
+      { ai: "Oh no, I'm sorry to hear that. What's wrong?", ja: "あら、それは大変。どうしたの？",
+        hint: "熱があって頭が痛いと説明しよう", answers: ["I have a fever and a headache.", "I've got a fever and my head hurts.", "I have a high fever and a bad headache."] },
+      { ai: "That sounds awful. Are you going to see a doctor?", ja: "つらそうね。病院には行くの？",
+        hint: "はい、今日の午前中に行くと答えよう", answers: ["Yes, I'll see a doctor this morning.", "Yes, I'm going to the clinic this morning.", "I'll go to the doctor this morning."] },
+      { ai: "Good. Is there anything urgent at work I should know about?", ja: "よかった。仕事で急ぎのことは何かある？",
+        hint: "3時の会議を延期してほしいとお願いしよう", answers: ["Could you move my 3 o'clock meeting?", "Can we postpone the meeting at three?", "Please reschedule my 3 p.m. meeting."] },
+      { ai: "No problem, I'll take care of it. Just rest and get well soon.", ja: "大丈夫、対応しておくわ。ゆっくり休んで早く元気になってね。",
+        hint: "ありがとう、迷惑をかけてごめんなさいと伝えよう", answers: ["Thank you. Sorry for the trouble.", "Thanks so much. I'm sorry about this.", "Thank you, and sorry for the inconvenience."] },
     ],
   },
 ];
