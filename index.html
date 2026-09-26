@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3b6cf6">
+  <meta name="description" content="翻訳・会話練習・発音練習・単語帳ができる英会話アプリ">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="英会話Talk">
+  <title>えいかいわ Talk</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>🗣️ えいかいわ Talk</h1>
+    <button id="btn-settings" class="icon-btn" title="設定" aria-label="設定">⚙️</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="translate"><span class="ti">🌐</span><span class="tl">翻訳</span></button>
+    <button class="tab" data-tab="scenario"><span class="ti">🎭</span><span class="tl" data-short="会話">会話練習</span></button>
+    <button class="tab" data-tab="ai"><span class="ti">🤖</span><span class="tl" data-short="AI">AIフリートーク</span></button>
+    <button class="tab" data-tab="pron"><span class="ti">🎤</span><span class="tl" data-short="発音">発音練習</span></button>
+    <button class="tab" data-tab="vocab"><span class="ti">📚</span><span class="tl" data-short="単語">単語帳</span></button>
+    <button class="tab" data-tab="stats"><span class="ti">📊</span><span class="tl">記録</span></button>
+    <button class="tab" data-tab="saved"><span class="ti">⭐</span><span class="tl">保存</span></button>
+  </nav>
+
+  <main>
+    <!-- 翻訳 -->
+    <section id="tab-translate" class="panel active">
+      <div class="lang-bar">
+        <span id="src-lang-label" class="lang-pill">日本語</span>
+        <button id="btn-swap" class="icon-btn" title="入れ替え">⇄</button>
+        <span id="dst-lang-label" class="lang-pill">English</span>
+      </div>
+      <div class="card">
+        <textarea id="src-text" rows="4" placeholder="翻訳したい文章を入力、またはマイクで話してください"></textarea>
+        <div class="row">
+          <button id="btn-src-mic" class="btn mic">🎤 話す</button>
+          <button id="btn-src-speak" class="btn ghost">🔊</button>
+          <button id="btn-clear" class="btn ghost">クリア</button>
+          <span class="spacer"></span>
+          <button id="btn-translate" class="btn primary">翻訳する</button>
+        </div>
+      </div>
+      <div class="card result">
+        <div id="dst-text" class="dst-text placeholder">ここに翻訳結果が表示されます</div>
+        <div class="row">
+          <button id="btn-dst-speak" class="btn ghost">🔊 読み上げ</button>
+          <button id="btn-dst-slow" class="btn ghost">🐢 ゆっくり</button>
+          <button id="btn-copy" class="btn ghost">📋 コピー</button>
+          <button id="btn-save" class="btn ghost">⭐ 保存</button>
+          <button id="btn-to-vocab" class="btn ghost">📚 単語帳へ</button>
+          <span class="spacer"></span>
+          <small id="engine-label" class="muted"></small>
+        </div>
+      </div>
+      <h3 class="section-title">最近の翻訳</h3>
+      <ul id="history-list" class="list"></ul>
+    </section>
+
+    <!-- シナリオ会話練習 -->
+    <section id="tab-scenario" class="panel">
+      <div id="scenario-picker">
+        <p class="muted">シーンを選んで、英語で受け答えする練習をしましょう。相手のセリフが読み上げられたら、🎤 で英語を話すか入力してください。</p>
+        <div id="scenario-grid" class="grid"></div>
+      </div>
+      <div id="scenario-play" class="hidden">
+        <div class="row">
+          <button id="btn-scn-back" class="btn ghost">← シーン一覧</button>
+          <strong id="scn-title"></strong>
+          <span class="spacer"></span>
+          <span id="scn-progress" class="muted"></span>
+        </div>
+        <div id="scn-chat" class="chat"></div>
+        <div id="scn-hint" class="hint hidden"></div>
+        <div class="composer">
+          <input id="scn-input" type="text" placeholder="英語で返事をしてみよう（Enterで送信）">
+          <button id="btn-scn-mic" class="btn mic">🎤</button>
+          <button id="btn-scn-send" class="btn primary">送信</button>
+        </div>
+        <div class="row">
+          <button id="btn-scn-hint" class="btn ghost">💡 ヒント</button>
+          <button id="btn-scn-answer" class="btn ghost">📖 模範解答</button>
+          <button id="btn-scn-repeat" class="btn ghost">🔁 もう一度聞く</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI フリートーク -->
+    <section id="tab-ai" class="panel">
+      <div id="ai-nokey" class="card hidden">
+        <p>AIフリートークには Claude API キーが必要です。⚙️ 設定から登録してください。</p>
+        <p class="muted">キーはこのブラウザ内（localStorage）にのみ保存され、Anthropic API への通信にだけ使われます。</p>
+      </div>
+      <div class="row wrap">
+        <label>トピック
+          <select id="ai-topic">
+            <option value="free">自由に雑談</option>
+            <option value="hobby">趣味について</option>
+            <option value="travel">旅行の話</option>
+            <option value="work">仕事の話</option>
+            <option value="food">食べ物の話</option>
+            <option value="interview">英語面接の練習</option>
+          </select>
+        </label>
+        <label>レベル
+          <select id="ai-level">
+            <option value="beginner">初級</option>
+            <option value="intermediate" selected>中級</option>
+            <option value="advanced">上級</option>
+          </select>
+        </label>
+        <span class="spacer"></span>
+        <button id="btn-ai-reset" class="btn ghost">🔄 新しい会話</button>
+      </div>
+      <div id="ai-chat" class="chat"></div>
+      <div class="composer">
+        <input id="ai-input" type="text" placeholder="英語で話しかけてみよう（日本語混じりでもOK）">
+        <button id="btn-ai-mic" class="btn mic">🎤</button>
+        <button id="btn-ai-send" class="btn primary">送信</button>
+      </div>
+      <label class="check"><input id="ai-autospeak" type="checkbox" checked> AIの返事を自動で読み上げる</label>
+    </section>
+
+    <!-- 発音練習 -->
+    <section id="tab-pron" class="panel">
+      <div class="row wrap">
+        <label>カテゴリ <select id="pron-cat"></select></label>
+        <span class="spacer"></span>
+        <span id="pron-score-total" class="muted"></span>
+      </div>
+      <div class="card pron-card">
+        <div id="pron-en" class="pron-en"></div>
+        <div id="pron-ja" class="muted"></div>
+        <div class="row center">
+          <button id="btn-pron-listen" class="btn ghost">🔊 お手本</button>
+          <button id="btn-pron-slow" class="btn ghost">🐢 ゆっくり</button>
+          <button id="btn-pron-mic" class="btn mic big">🎤 発音する</button>
+        </div>
+        <div id="pron-result" class="pron-result"></div>
+        <div class="row center">
+          <button id="btn-pron-prev" class="btn ghost">← 前へ</button>
+          <span id="pron-pos" class="muted"></span>
+          <button id="btn-pron-next" class="btn ghost">次へ →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 単語帳 -->
+    <section id="tab-vocab" class="panel">
+      <div class="row wrap">
+        <label>単語帳 <select id="vocab-cat"></select></label>
+        <span class="spacer"></span>
+        <span id="vocab-progress" class="muted"></span>
+      </div>
+      <div class="progress-bar"><div id="vocab-bar"></div></div>
+      <div class="modes">
+        <button class="mode active" data-mode="list">📋 一覧</button>
+        <button class="mode" data-mode="card">🃏 カード</button>
+        <button class="mode" data-mode="quiz">📝 クイズ</button>
+        <button class="mode" data-mode="spell">✍️ スペル</button>
+      </div>
+      <div id="vocab-area"></div>
+
+      <details id="vocab-add" class="card">
+        <summary>＋ マイ単語を追加</summary>
+        <div class="add-form">
+          <input id="add-en" type="text" placeholder="英単語・フレーズ（例: awkward）">
+          <input id="add-ja" type="text" placeholder="日本語の意味（空欄なら自動翻訳）">
+          <input id="add-ex" type="text" placeholder="例文（任意）">
+          <div class="row">
+            <span class="spacer"></span>
+            <button id="btn-add-word" class="btn primary">追加</button>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- 学習記録 -->
+    <section id="tab-stats" class="panel">
+      <div id="stat-tiles" class="tiles"></div>
+
+      <div class="card">
+        <div class="row">
+          <strong>🎯 今日の目標</strong>
+          <span class="spacer"></span>
+          <label>1日 <select id="goal-min">
+            <option value="5">5分</option><option value="10">10分</option><option value="15">15分</option>
+            <option value="20">20分</option><option value="30">30分</option><option value="60">60分</option>
+          </select></label>
+        </div>
+        <div class="progress-bar goal"><div id="goal-bar"></div></div>
+        <div id="goal-text" class="muted"></div>
+      </div>
+
+      <div class="card">
+        <strong>学習時間（直近14日・分）</strong>
+        <div id="chart-days" class="bar-chart"></div>
+      </div>
+
+      <div class="card">
+        <strong>学習カレンダー（直近16週）</strong>
+        <div id="heatmap" class="heatmap-wrap"></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <strong>練習の内訳</strong>
+          <span class="spacer"></span>
+          <div class="filter-row" id="range-chips">
+            <button class="chip" data-range="1">今日</button>
+            <button class="chip active" data-range="7">7日</button>
+            <button class="chip" data-range="30">30日</button>
+            <button class="chip" data-range="0">全期間</button>
+          </div>
+        </div>
+        <div id="breakdown"></div>
+      </div>
+
+      <div class="card">
+        <strong>😓 苦手な単語</strong>
+        <ul id="weak-words" class="list compact"></ul>
+      </div>
+
+      <div class="card">
+        <strong>🎭 会話練習のベストスコア</strong>
+        <ul id="scn-bests" class="list compact"></ul>
+      </div>
+
+      <div class="row">
+        <span class="spacer"></span>
+        <button id="btn-reset-stats" class="btn ghost">🗑️ 学習記録をリセット</button>
+      </div>
+    </section>
+
+    <!-- 保存 -->
+    <section id="tab-saved" class="panel">
+      <p class="muted">翻訳や会話で保存したフレーズです。タップで読み上げ。</p>
+      <ul id="saved-list" class="list"></ul>
+    </section>
+  </main>
+
+  <!-- 設定 -->
+  <dialog id="settings-dialog">
+    <form method="dialog" class="settings">
+      <h2>設定</h2>
+      <label>Claude API キー（任意）
+        <input id="set-apikey" type="password" placeholder="sk-ant-..." autocomplete="off">
+      </label>
+      <small class="muted">設定すると AI フリートークと高品質翻訳が使えます。未設定時の翻訳は無料の MyMemory API を使います。</small>
+      <label>英語の声
+        <select id="set-voice"></select>
+      </label>
+      <label>読み上げ速度 <span id="set-rate-val"></span>
+        <input id="set-rate" type="range" min="0.5" max="1.3" step="0.1">
+      </label>
+      <div class="row">
+        <button id="btn-set-test" type="button" class="btn ghost">🔊 テスト</button>
+        <span class="spacer"></span>
+        <button value="cancel" class="btn ghost">閉じる</button>
+        <button id="btn-set-save" value="save" class="btn primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <div id="tooltip" class="tooltip" role="tooltip"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
